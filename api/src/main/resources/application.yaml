@@ -1,11 +1,15 @@
+# web容器配置
 server:
   port: 8800
   servlet:
     context-path: /DMIL
+    session:
+      timeout: 3600s
+
 
 spring:
   application:
-    name: test
+    name: DMIL
   # 数据库配置
   datasource:
     driver-class-name: org.postgresql.Driver
@@ -15,15 +19,21 @@ spring:
 
   #页面配置
   mvc:
-    static-path-pattern: /**
+    static-path-pattern: /static/**  # 访问static下的静态资源，如images、js、css等，前缀必须加static/
+    favicon:
+      enabled: false
   resources:
     static-locations: classpath:/static/
   thymeleaf:
     prefix:
-      classpath: /templates/,/static/   # 访问template下的html文件需要配置模板，映射
+      classpath: /templates/  # 访问template下的html文件需要配置模板，映射
     suffix: .html
     cache: false # 开发时关闭缓存,不然没法看到实时页面
 
+  #页签图标自定义所用缓存参数
+  groovy:
+    template:
+      cache: false
 
 
 # mapper文件配置
