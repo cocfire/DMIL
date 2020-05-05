@@ -19,7 +19,7 @@ public class LoginController {
 
     @RequestMapping(value = "/dologin")
     public String login(){
-
+        System.out.println("登录请求。。。。。。。。。。。。。。。。");
 
 
 
