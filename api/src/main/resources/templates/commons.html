@@ -3,9 +3,11 @@
       xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
 <html lang="zh-cn">
 <!--
+    公共文件---引入方法：
     th:insert  ：保留自己的主标签，保留th:fragment的主标签。
     th:replace ：不要自己的主标签，保留th:fragment的主标签。
     th:include ：保留自己的主标签，不要th:fragment的主标签。（官方3.0后不推荐）
+    写法<div th:replace="commons::common_header"></div>
 -->
 <head th:fragment="common_header">
     <meta charset="utf-8">
@@ -15,14 +17,14 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <link th:href="@{static/icon/NETWORK_LAN.png}" rel="shortcut icon"><!-- 自定义页签图标 -->
+    <link th:href="@{/static/icon/NETWORK_LAN.png}" rel="shortcut icon"><!-- 自定义页签图标 -->
 
     <title>设备中间层平台</title>
 
     <!-- Bootstrap core CSS -->
-    <link th:href="@{static/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/static/css/bootstrap.min.css}" rel="stylesheet">
     <!-- Bootstrap theme -->
-    <link th:href="@{static/css/bootstrap-theme.min.css}" rel="stylesheet">
+    <link th:href="@{/static/css/bootstrap-theme.min.css}" rel="stylesheet">
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <link href="http://v3.bootcss.com/assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet">
 
@@ -36,15 +38,15 @@
 
     <script src="http://cdn.bootcss.com/html5shiv/3.7.0/html5shiv.min.js"></script>
     <script src="http://cdn.bootcss.com/respond.js/1.3.0/respond.min.js"></script>
-    <script th:src="@{static/js/jquery.min.js}"></script>
-    <script th:src="@{static/js/jquery.cookie.js}"></script>
-    <script th:src="@{static/js/bootstrap.min.js}"></script>
-    <script th:src="@{static/js/jquery.form.js}"></script>
-    <script th:src="@{static/js/jquery.enplaceholder.js}"></script>
+    <script th:src="@{/static/js/jquery.min.js}"></script>
+    <script th:src="@{/static/js/jquery.cookie.js}"></script>
+    <script th:src="@{/static/js/bootstrap.min.js}"></script>
+    <script th:src="@{/static/js/jquery.form.js}"></script>
+    <script th:src="@{/static/js/jquery.enplaceholder.js}"></script>
 </head>
 <body>
-    <!-- 导航栏 -->
-    <nav class="navbar navbar-inverse navbar-fixed-top" th:fragment="common_nav">
+    <!-- 导航栏模块 begin  -->
+    <nav th:fragment="common_nav" class="navbar navbar-inverse navbar-fixed-top">
         <div class="container">
             <div class="navbar-header">
                 <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -57,10 +59,10 @@
             </div>
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
-                    <li class="active"><a href="#">使用指南</a></li>
-                    <li><a href="#about">软件管理</a></li>
-                    <li><a href="#contact">设备管理</a></li>
-                    <li><a href="#contact">系统日志</a></li>
+                    <li id="begin"><a href="/DMIL/begin">使用指南</a></li>
+                    <li id="software"><a href="/DMIL/software/list">软件管理</a></li>
+                    <li id="device"><a href="/DMIL/device/list">设备管理</a></li>
+                    <li id="syslog"><a href="/DMIL/syslog/list">系统日志</a></li>
                     <!-- 下拉菜单样式 -->
                     <!--<li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
@@ -79,10 +81,136 @@
                     <li>
                         <a class="glyphicon glyphicon-lock" href="javascript:void(0);" onclick="openChangePwdModal()">修改密码</a>
                     </li>
-                    <li><a class="glyphicon glyphicon-off" href="logout">安全退出</a></li>
+                    <li><a class="glyphicon glyphicon-off" href="/DMIL/dologout">安全退出</a></li>
                 </ul>
             </div>
         </div>
+        <script type="text/javascript">
+            /* 导航栏选中状态 */
+            $(document).ready(function () {
+                var currenthref = location.href;
+                if (currenthref.indexOf("begin") > 0) {
+                    $("#begin").addClass("active");
+                } else if (currenthref.indexOf("software") > 0) {
+                    $("#software").addClass("active");
+                } else if (currenthref.indexOf("device") > 0) {
+                    $("#device").addClass("active");
+                } else if (currenthref.indexOf("syslog") > 0) {
+                    $("#syslog").addClass("active");
+                }
+                return
+
+            });
+        </script>
     </nav>
+    <!-- 导航栏模块 end -->
+
+    <!-- 修改密码模块 begin -->
+    <div th:fragment="common_pwdmodal" class="modal fade" id="changepwdmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title" id="myModalLabel">修改密码</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="pwdForm" name="pwdForm" class="form-horizontal" role="form" method="post" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="oldPwd" class="col-sm-3 control-label">旧密码</label>
+                            <div class="col-sm-5">
+                                <input type="password" class="form-control" id="oldPwd" name="oldPwd" placeholder="旧密码" value="">
+                            </div>
+                        </div>
+                        </br>
+                        <div class="form-group">
+                            <label for="newPwd" class="col-sm-3 control-label">新密码</label>
+                            <div class="col-sm-5">
+                                <input type="password" class="form-control" id="newPwd" name="newPwd" placeholder="新密码" value="">
+                            </div>
+                        </div>
+                        </br>
+                        <div class="form-group">
+                            <label for="newPwdConfirm" class="col-sm-3 control-label">确认密码</label>
+                            <div class="col-sm-5">
+                                <input type="password" class="form-control" id="newPwdConfirm" name="newPwdConfirm" placeholder="确认密码" value="">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="savebtn" type="button" class="btn btn-primary" onclick="newpwdsave()">保存</button>
+                    <button id="cancelbtn" type="button" class="btn btn-default" onclick="hidePwdModal()">取消</button>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            /* 修改密码相关方法 */
+            function openChangePwdModal() {
+                $("#oldPwd").val("");
+                $("#newPwd").val("");
+                $("#newPwdConfirm").val("");
+                $("#changepwdmodal").modal('show');
+            }
+            function hidePwdModal() {
+                $("#changepwdmodal").modal('hide');
+            }
+            function newpwdsave() {
+                var oldPwd = $("#oldPwd").val();
+                var newPwd = $("#newPwd").val();
+                var newPwdConfirm = $("#newPwdConfirm").val();
+                if(oldPwd == ''){
+                    alert("请填写旧密码！");
+                    $("#oldPwd").focus();
+                    return;
+                }
+                if(newPwd == ''){
+                    alert("请填写新密码！");
+                    $("#newPwd").focus();
+                    return;
+                }
+                if(newPwdConfirm != newPwd){
+                    alert("确认密码与新密码不一致！");
+                    $("#newPwdConfirm").focus();
+                    return;
+                }
+                if(oldPwd == newPwd){
+                    alert("新密码不能与旧密码相同！");
+                    $("#newPwdConfirm").focus();
+                    return;
+                }
+                if(newPwd.length < 6){
+                    alert("新密码不能少于6位！");
+                    $("#newPwd").focus();
+                    return;
+                }
+
+                var data = {};
+                data.oldPwd = oldPwd;
+                data.newPwd = newPwd;
+                data.newPwdConfirm = newPwdConfirm;
+                $.ajax({
+                    type: "POST"
+                    , url: "/DMIL/changepwd"
+                    , data: data
+                    , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                    , dataType: "json"
+                    , cache: false
+                    , success: function (data) {
+                        if (data.obj1 == 'success') {
+                            console.log("修改成功!");
+                            //修改成功跳转登录页
+                            location.href="/DMIL/login";
+                        } else {
+                            alert(data.obj1);
+                        }
+                    }
+                    , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        alert(XMLHttpRequest.status + textStatus);
+                    }
+                });
+            }
+        </script>
+    </div>
+    <!-- 修改密码模块 end -->
 </body>
 </html>

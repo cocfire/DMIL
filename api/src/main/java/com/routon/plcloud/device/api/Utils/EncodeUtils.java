@@ -20,8 +20,8 @@ public class EncodeUtils {
     /**
      * 获取密码的MD5戳
      *
-     * @param password  密码
-     * @return 密码的MD5戳
+     * @param password 密码
+     * @return 密码的MD5加密
      */
     public String getPasswordMD5(String password) {
         MessageDigest messageDigest = null;
@@ -29,7 +29,7 @@ public class EncodeUtils {
 
         try {
             //获取报文摘要算法
-            messageDigest = MessageDigest.getInstance("MD5");
+            messageDigest = MessageDigest.getInstance("MD5" );
         } catch (NoSuchAlgorithmException e) {
             logger.error(e.getMessage(), e);
         }
@@ -37,10 +37,13 @@ public class EncodeUtils {
         if (messageDigest == null) {
             return password;
         }
-        //
-        digest = messageDigest.digest((password+"tvb").getBytes());
-
-
+        digest = messageDigest.digest((password + "tvb" ).getBytes());
         return Hex.encodeHexString(digest);
+    }
+
+    public static void main(String[] args) {
+        EncodeUtils EncodeUtils = new EncodeUtils();
+        String s = EncodeUtils.getPasswordMD5("123456" );
+        System.out.println(s);
     }
 }

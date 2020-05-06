@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.util.Date;
 
 /**
  * @author FireWang
@@ -30,13 +31,13 @@ public class LoginController {
     @Autowired
     private UserinfoService userinfoService;
 
+    /* 登录页面初始化 */
     @RequestMapping(value = "/login")
     public String logininit(){
-
-        //登录页面初始化
         return "login";
     }
 
+    /* 执行登录 */
     @RequestMapping(value = "/dologin")
     @ResponseBody
     public JSONObject login(HttpServletRequest request, String account, String password){
@@ -53,7 +54,15 @@ public class LoginController {
                     userProfile.setCurrentUserLoginName(admin.getUsername());
                     userProfile.setCurrentUserstatus(1);
                     userProfile.setCurrentUserLoginIp(LoginController.getIpAddr(request));
-                    msg = "success";
+
+                    /* 更新登录信息 */
+                    admin.setLastlogintime(new Date());
+                    admin.setLastloginip(LoginController.getIpAddr(request));
+                    if (userinfoService.saveadmin(admin)) {
+                        msg = "success";
+                    } else {
+                        msg = "修改失败：数据异常！";
+                    }
                 } else {
                     msg = "登录失败：账号或密码错误！";
                 }
@@ -64,6 +73,57 @@ public class LoginController {
             session.setAttribute("userProfile", userProfile);
         } catch (Exception e) {
             logger.error(e.getMessage());
+            resJson.put("obj1", e.getMessage());
+            return resJson;
+        }
+        resJson.put("obj1", msg);
+        return resJson;
+    }
+
+    /* 执行登出 */
+    @RequestMapping(value = "/dologout")
+    public String logout(HttpServletRequest request){
+        HttpSession session = request.getSession();
+        //使session失效，从而登出
+        session.invalidate();
+        return "login";
+    }
+
+    /* 修改密码 */
+    @RequestMapping(value = "/changepwd")
+    @ResponseBody
+    public JSONObject changepwd(HttpServletRequest request, String oldPwd, String newPwd, String newPwdConfirm){
+        HttpSession session = request.getSession();
+        JSONObject resJson = new JSONObject();
+        String msg = "修改失败：系统异常！";
+        try {
+            UserProfile userProfile = (UserProfile) session.getAttribute("userProfile" );
+            Userinfo admin = userinfoService.getadmin();
+            if (admin != null) {
+                if (admin.getPassword().equals(encodeUtil.getPasswordMD5(oldPwd))) {
+                    if (oldPwd.equals(newPwd)) {
+                        msg = "修改失败：新密码不能与旧密码相同！";
+                    } else if (newPwd.equals(newPwdConfirm)) {
+                        admin.setPassword(encodeUtil.getPasswordMD5(newPwd));
+                        if (userinfoService.saveadmin(admin)) {
+                            msg = "success";
+                            session.invalidate();
+                        } else {
+                            msg = "修改失败：数据异常！";
+                        }
+                    } else {
+                        msg = "修改失败：确认密码与新密码不一致！";
+                    }
+                } else {
+                    msg = "修改失败：旧密码错误！";
+                }
+            } else {
+                msg = "修改失败：用户不存在！";
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            resJson.put("obj1", msg);
+            return resJson;
         }
         resJson.put("obj1", msg);
         return resJson;

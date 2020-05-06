@@ -8,7 +8,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * @date 2020/4/29 22:12
  */
 @Controller
-@RequestMapping(value = "/begin")
+@RequestMapping(value = "/device")
 public class DeviceController {
+
+    /* 初始化设备管理 */
+    @RequestMapping(value = "/list")
+    public String listinit() {
+
+        return "thymeleaf/device";
+    }
 
 }

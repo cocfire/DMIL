@@ -90,7 +90,7 @@ public class RouteFilter implements Filter {
                 }
 
                 //对于已经登录的用户，若访问登录页面路径，则返回导航页面
-                if (request.getRequestURI().equals(request.getContextPath())) {
+                if (request.getRequestURI().equals(request.getContextPath()) || request.getRequestURI().equals(request.getContextPath()+"/")) {
                     response.sendRedirect(request.getContextPath() + "/begin");
                     return;
                 }

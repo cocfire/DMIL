@@ -5,7 +5,7 @@
 <head th:replace="commons::common_header">
 </head>
 <body>
-    <img id="bg" th:src="@{static/images/bg.jpg}" style="width:100%; height:100%; right:0; bottom:0; position:absolute; top:0; left:0; z-index:-1"/>
+    <img id="bg" th:src="@{/static/images/bg.jpg}" style="width:100%; height:100%; right:0; bottom:0; position:absolute; top:0; left:0; z-index:-1"/>
     <div id="version" style="position:absolute; width:150px; right:0;">version:1.2.0 <br/>build-20200505</div>
     <div id="login" style="overflow: visible; left: 0; position: absolute; top: 275px;">
         <div style="width:420px; height:370px; background-image:url('static/images/login_modal.png'); background-repeat:no-repeat; margin-left:70%; padding-top:5px; padding-left:10px;">
@@ -71,7 +71,7 @@
         }
         $.ajax({
             type: "POST"
-            , url: "dologin"
+            , url: "/DMIL/dologin"
             , data: {
                 account: account,
                 password: password
@@ -83,7 +83,7 @@
                 if (data.obj1 == 'success') {
                     console.log("登陆成功");
                     //登陆成功跳转导航页
-                    location.href="begin";
+                    location.href="/DMIL/begin";
                 } else {
                     alert(data.obj1);
                 }
@@ -92,7 +92,6 @@
                 alert(XMLHttpRequest.status + textStatus);
             }
         });
-
     }
 </script>
 </html>

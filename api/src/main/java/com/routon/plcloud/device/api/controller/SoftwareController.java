@@ -4,19 +4,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
- * @ClassName:
- * @Description:
- * @Author: fire
- * @Time: 2020-04-30 01:23
- **/
+ * @author FireWang
+ * @date 2020/5/6 22:12
+ */
 @Controller
-@RequestMapping(value = "/syslog")
-public class SyslogController {
+@RequestMapping(value = "/software")
+public class SoftwareController {
 
-    /* 系统日志页面初始化 */
+    /* 软件管理页面初始化 */
     @RequestMapping(value = "/list")
     public String listinit(){
 
-        return "thymeleaf/syslog";
+        return "thymeleaf/software";
     }
+
 }

@@ -12,7 +12,7 @@ public class ThemleafController {
     @RequestMapping(value = "/index")
     public String toindex(){
 
-        //这里返回页面路径
+        /* 这里返回页面路径 */
         return "/index";
     }
 }

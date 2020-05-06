@@ -11,13 +11,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Controller
 public class BeginController {
 
-    //初始化导航页面
+    /* 初始化导航页面 */
     @RequestMapping(value = "/begin")
     public String begininit() {
-
-
+        /* 打开导航页 */
         return "thymeleaf/begin";
     }
-
 
 }

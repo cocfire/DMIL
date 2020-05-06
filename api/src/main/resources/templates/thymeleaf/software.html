@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<html lang="zh-cn">
+<head th:replace="commons::common_header"><!-- 引入头文件 -->
+    <link rel="stylesheet" th:href="@{/static/css/zTreeStyle.css}">
+    <link rel="stylesheet" th:href="@{/static/css/jquery-ui.min.css}">
+    <link rel="stylesheet" th:href="@{/static/css/jquery-ui-1.10.4.custom.css}">
+</head>
+<body>
+    <nav th:replace="commons::common_nav"></nav><!-- 引入导航栏 -->
+    <div th:replace="commons::common_pwdmodal"></div>
+    <div class="container" style="width: 98%; margin-left: 1%;">
+        <div class="panel panel-default" style=" width: 98%; margin-left: 1%;">
+            <div class="panel-heading">
+                <div class="pull-right">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary"
+                                onclick="addSoftwareProduct()">指定软件所在目录
+                        </button>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary"
+                                onclick="downSoftwareProduct()">下载软件
+                        </button>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-danger"
+                                onclick="deleteSoftwareProduct()">删除
+                        </button>
+                    </div>
+                </div>
+                <h5> 软件管理 </h5>
+            </div>
+            <div class="panel-body">
+                <div class="panel panel-default col-sm-2" style="overflow-y: auto; overflow-x: auto; width: 280px; height: 600px;">
+                    <form class="form-inline" style="width: 280px;" role="form" id="queryTreeForm" name="queryTreeForm">
+                        <input id="softwareId" type="hidden" value="${softwareId}">
+                        <!-- <input id="hiddenInput" type="hidden" value="${treeNodeTid}"> -->
+
+                        <div class="btn-group">
+                            <input id="softwarenameId" name="softwarename" type="text" class="form-control" placeholder="请输入软件名称"/>
+                        </div>
+                        <div class="btn-group">
+                            <button type="submit" onclick="searchSoftwareTreeByName()" class="btn btn-primary">查询</button>
+                        </div>
+                    </form>
+
+                    <ul id="softwareNameTree" class="ztree "></ul>
+                </div>
+                <!--<div class="panel panel-default col-sm-10">
+                    <table name="requestScope.pageList" id="curPage" class="table table-striped" sort="external"
+                           requestURI="list.do"
+                           decorator="com.routon.plcloud.common.decorator.PageSoftwareProductDecorator"
+                           export="false">
+                        <column property="id" title="<%=PageCheckboxDecorator.getTitle(pageContext)%>"
+                                decorator="com.routon.plcloud.common.decorator.PageCheckboxDecorator" media="html"
+                                style="width:1%;"/>
+
+                        <column title="上传包名" property="uploadsoftwarename" sortable="true" style="width:3%;"/>
+                        <column title="软件唯一号" property="filetimestamp" sortable="true" style="width:3%;"/>
+                        <column title="上传时间" property="uploadtime" sortable="true"
+                                decorator="com.routon.plcloud.common.decorator.PageDateTimeDecorator"
+                                style="width:3%;"/>
+                    </table>
+                </div>-->
+                <!--<%@ include file="/WEB-INF/views/common/pagination.jsp" %>-->
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript">
+
+</script>
+</html>
