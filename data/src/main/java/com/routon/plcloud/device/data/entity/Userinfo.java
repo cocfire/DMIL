@@ -5,7 +5,7 @@ import java.util.Date;
 
 public class Userinfo{
 
-	private Object id;
+	private Integer id;
 	private Object openid;
 	private String username;
 	private String realname;
@@ -13,7 +13,7 @@ public class Userinfo{
 	private String phone;
 	private Date createtime;
 	private Date modifytime;
-	private Object stutas;
+	private Object status;
 	private Object counts;
 	private String lastloginip;
 	private Date lastlogintime;
@@ -21,10 +21,10 @@ public class Userinfo{
 	private String project;
 	private String remark;
 
-	public void setId(Object id) {
+	public void setId(Integer id) {
 		this.id = id;
 	}
-	public Object getId() {
+	public Integer getId() {
 		return id;
 	}
 	public void setOpenid(Object openid) {
@@ -69,11 +69,11 @@ public class Userinfo{
 	public Date getModifytime() {
 		return modifytime;
 	}
-	public void setStutas(Object stutas) {
-		this.stutas = stutas;
+	public void setStatus(Object status) {
+		this.status = status;
 	}
-	public Object getStutas() {
-		return stutas;
+	public Object getStatus() {
+		return status;
 	}
 	public void setCounts(Object counts) {
 		this.counts = counts;

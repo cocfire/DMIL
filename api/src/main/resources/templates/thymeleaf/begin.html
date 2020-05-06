@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<html lang="zh-cn">
+<head th:replace="commons::common_header"><!-- 引入头文件 -->
+</head>
+<body>
+    <nav th:replace="commons::common_nav"></nav><!-- 引入导航栏 -->
+    <div class="panel panel-default" style="border: none;">
+        <div class="panel-body" style="height: 680px">
+            <div class="container" style="margin-top: 150px;">
+                <div id=roleN>
+                    <ol class="breadcrumb">
+                        <li><b>使用流程：</b></li>
+                        <li>
+                            <a href="${ctx}/softproduct/list.do">软件管理</a>
+                        </li>
+                        <li>
+                            <a href="${ctx}/machine/list.do">设备管理</a>
+                        </li>
+                        <li>
+                            <a href="${ctx}/opLog/list.do">系统日志</a>
+                        </li>
+                    </ol>
+                </div>
+                <div id=inputN>
+                    <p style="font-weight:bold;coler:black;">流程说明:</p>
+                    <textarea id="markN" name="mark" style="width:1140px; height:400px;outline:none; border:0;resize:none ;" readonly>
+                        (1): 选择"软件管理"-->点击"指定软件所在目录"-->选择软件包-->点击“上传”;
+
+                        (2): 选择"设备管理"-->勾选设备-->点击"设备升级"-->选择升级版本-->点击"升级";
+
+                        (3): 选择"系统日志"-->输入"查询条件"-->点击"查询";
+                    </textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript">
+
+</script>
+</html>

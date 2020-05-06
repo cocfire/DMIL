@@ -14,7 +14,7 @@ public class UserProfile implements Serializable {
     /**
      * 当前登录用户ID
      */
-    protected Long currentUserId;
+    protected Integer currentUserId;
 
     /**
      * 当前登录用户状态：0-失效；1-有效；
@@ -45,11 +45,11 @@ public class UserProfile implements Serializable {
         return serialVersionUID;
     }
 
-    public Long getCurrentUserId() {
+    public Integer getCurrentUserId() {
         return currentUserId;
     }
 
-    public void setCurrentUserId(Long currentUserId) {
+    public void setCurrentUserId(Integer currentUserId) {
         this.currentUserId = currentUserId;
     }
 

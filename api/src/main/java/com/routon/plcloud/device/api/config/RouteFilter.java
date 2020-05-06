@@ -51,6 +51,10 @@ public class RouteFilter implements Filter {
                 filterChain.doFilter(request, response);
                 return;
             }
+            if(request.getRequestURI().equals("/DMIL/dologin")){//登录页面直接跳过
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             //接口访问跳过过滤规则
             if(request.getRequestURI().contains("/hello")){
@@ -67,6 +71,7 @@ public class RouteFilter implements Filter {
                 //判断是否是ajax请求,是的话设置请求超时，直接返回登录页
                 if( request.getHeader("x-requested-with") != null &&
                         request.getHeader("x-requested-with").equals("XMLHttpRequest") ) {
+                    logger.info("ajax请求："+ request.getRequestURI());
                     response.setHeader("sessionStatus", "timeout");
                 } else {
                     //该方法可实现跳转，但共用一个servlet，url不会变化

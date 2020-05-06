@@ -16,7 +16,7 @@ public class BeginController {
     public String begininit() {
 
 
-        return "begin";
+        return "thymeleaf/begin";
     }
 
 
