@@ -9,6 +9,13 @@
     th:include ：保留自己的主标签，不要th:fragment的主标签。（官方3.0后不推荐）
     写法<div th:replace="commons::common_header"></div>
 -->
+<!--
+    静态资源---引入方法：
+    资源属性前加th: (如：<link th:href="@{/static/css/bootstrap.min.css}" rel="stylesheet">
+    资源路径说明：
+    必须以@{}包裹，例：@{/static}为绝对路径，访问时不会添加前缀；
+    @{static}为相对路径；访问时会添加当前servlet路径前缀
+-->
 <head th:fragment="common_header">
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
