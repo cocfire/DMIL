@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-cn" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="vrdevice/start::vr_header"><!--引入头文件-->
+</head>
+<body>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui.min.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui-1.10.4.custom.css}"/>
+<!-- 导航栏模块 begin  -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand" style="color: skyblue"><b>虚拟设备平台</b></a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <!-- 独立式菜单按钮 -->
+            <ul class="nav navbar-nav">
+                <!--<li id="begin"><a href="/DMIL/begin">使用指南</a></li>-->
+                <li id="device"><a href="/DMIL/vrdevice/list"><b>设备管理</b></a></li>
+            </ul>
+            <!-- 下拉式菜单按钮 -->
+            <ul class="nav navbar-nav navbar-right">
+                <li><a class="glyphicon glyphicon-off" href="/DMIL/vrdevice/passout">安全退出</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<!-- 导航栏模块 end -->
+
+<!-- 设备管理模块整理视图 -->
+<div class="container" style="width: 1500px; margin-top: 50px">
+    <div class="panel panel-default" style="width: 98%; margin-left: 1%;">
+        <!-- 表头功能按键 -->
+        <div class="panel-heading">
+            <div class="pull-right">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="openAdd()" id="openAdd">
+                        添加虚拟设备
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="openOpreation()" id="openOpreation">
+                        批量操作
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" onclick="location.reload()">
+                        刷新
+                    </button>
+                </div>
+            </div>
+            <h5> 虚拟设备管理 </h5>
+        </div>
+
+        <!-- 表格主体 -->
+        <form class="form-inline" role="form" id="formaboutdevice" name="formaboutdevice" action="/DMIL/device/list"
+              method="post">
+            <div class="panel-body">
+                <!-- 主体信息表格 -->
+                <div class="panel panel-default col-sm-10" style="width: 98%; margin-left: 1%; height:650px;">
+                    <div class="panel-heading " style="padding: 0px;">
+                        <div style="display: inline-block;width: 100%; padding-top: 10px">
+                            <div class=" col-sm-12">
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="vrdeviceid" name="vrdeviceid" th:value="${vrdeviceid}"
+                                           placeholder="虚拟序列号" maxlength="100"
+                                           style="width: 200px;padding-bottom: 0px;padding-top: 0px;height: 34px;"
+                                           onkeyup="this.value=this.value.replace(/[^\uFF00-\uFFFF\u4e00-\u9fa5\w\@\&\-]/g,'')">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="name" name="name" th:value="${name}"
+                                           placeholder="设备名称" maxlength="100"
+                                           style="width: 200px;padding-bottom: 0px;padding-top: 0px;height: 34px;">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="remark" name="remark" th:value="${remark}"
+                                           placeholder="设备当前消息" maxlength="100"
+                                           style="width: 200px;padding-bottom: 0px;padding-top: 0px;height: 34px;">
+                                </div>
+
+                                <div class="btn-group" role="group"><!--suppress ALL-->
+                                    <input type="hidden" id="onlineStatus" th:value="${status}">
+                                    <button id="onlineCss" type="button" class="btn dropdown-toggle"
+                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span id="statusflag">全部</span>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="javascript:queryByStatus('')">全部</a></li>
+                                        <li><a href="javascript:queryByStatus('1')">在线</a></li>
+                                        <li><a href="javascript:queryByStatus('0')">离线</a></li>
+                                    </ul>
+                                    <script th:inline="javascript">
+                                        /* 设备状态下拉按钮预处理 */
+                                        $(document).ready(function () {
+                                            var status = [[${status}]];
+                                            if (status == 1) {
+                                                $("#statusflag").text("在线");
+                                                $("#onlineCss").addClass("btn-info");
+                                            } else if (status == 0) {
+                                                $("#statusflag").text("离线");
+                                                $("#onlineCss").addClass("btn-danger");
+                                            } else {
+                                                $("#statusflag").text("全部");
+                                                $("#onlineCss").addClass("btn-default");
+                                            }
+                                            return;
+                                        });
+
+                                        function queryByStatus(sta) {
+                                            if (sta == '1') {
+                                                $("#onlineStatus").val(1);
+                                            } else if (sta == '0') {
+                                                $("#onlineStatus").val(0);
+                                            } else {
+                                                $("#onlineStatus").val('');
+                                            }
+                                            querylist();
+                                        }
+                                    </script>
+                                </div>&nbsp;&nbsp;
+                                <div class="btn-group">
+                                    <button id="queryBtn2" type="button" class="btn btn-primary"
+                                            onclick="querylist()">
+                                        查询
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-striped scroll-bar"
+                           style="table-layout: fixed; display:block; height: 500px; overflow: auto">
+                        <!--suppress ALL-->
+                        <thead th:if="${datalist.size() > 0}">
+                        <tr>
+                            <th><!--suppress ALL-->
+                                <input type="checkbox" id="checkRow_head" name="checkRow_" value=""
+                                       th:onclick="|checkPageSelected_(this);loadallids(this, ${datalist})|"/>
+                            </th>
+                            <th>虚拟序列号</th>
+                            <th>设备名称</th>
+                            <th>上次操作时间</th>
+                            <th>在线状态</th>
+                            <th>当前消息</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() > 0}">
+                        <!--suppress ALL-->
+                        <tr th:each="vrdevice : ${datalist}">
+                            <th scope="row"><!--suppress ALL-->
+                                <input type="checkbox" name="checkRow_"
+                                       th:onclick="|checkRowSelected_(this);loadcheck(this, ${vrdevice.id})|"/>
+                            </th><!--suppress ALL-->
+                            <td th:text="${vrdevice.vrdeviceid}" style="width: 20%;"></td><!--suppress ALL-->
+                            <td th:text="${vrdevice.name}" style="width: 20%;"></td><!--suppress ALL-->
+                            <td th:text="${#dates.format(vrdevice.updatetime,'yyyy-MM-dd HH:mm:ss')}" style="width: 20%;"></td><!--suppress ALL-->
+                            <td style="width: 10%;"><!--suppress ALL-->
+                                <label th:if="${vrdevice.status == 0}" style="color:red;">离线</label><!--suppress ALL-->
+                                <label th:if="${vrdevice.status == 1}" style="color:deepskyblue;">在线</label>
+                            </td><!--suppress ALL-->
+                            <td style="width: 10%;"><!--suppress ALL-->
+                                <button type="button" th:class="${vrdevice.remark == ''?'btn-xs btn-default':'btn-xs btn-success'}"
+                                        th:onclick="|messages(${vrdevice.id})|">
+                                    查看详情
+                                </button>
+                            </td>
+                            <td style="width: 20%;"><!--suppress ALL-->
+                                <button type="button" class="btn-xs btn-info" th:onclick="|details(${vrdevice.id})|">
+                                    详情
+                                </button><!--suppress ALL-->&nbsp;
+                                <button type="button" class="btn-xs btn-primary"
+                                        th:onclick="|vrOnline(${vrdevice.id})|">
+                                    上线
+                                </button><!--suppress ALL-->&nbsp;
+                                <button type="button" class="btn-xs btn-danger"
+                                        th:onclick="|vrOffline(${vrdevice.id})|">
+                                    离线
+                                </button><!--suppress ALL-->&nbsp;
+                                <button type="button" class="btn-xs btn-warning"
+                                        th:onclick="|openSingleOp('2', ${vrdevice.id})|">
+                                    订阅
+                                </button><!--suppress ALL-->&nbsp;
+                                <button type="button" class="btn-xs btn-success"
+                                        th:onclick="|openSingleOp('3', ${vrdevice.id})|">
+                                    发布
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() == 0}">
+                        <div class="pagenodate" style="padding-top: 50px"><label style="color:red;">没有符合您要求的记录</label>
+                        </div>
+                        </tbody>
+                    </table>
+                    <!-- 分页组件 -->
+                    <div th:replace="commons::common_paginater"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 批量操作框 -->
+<div class="modal fade" id="opreationDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 500px;">
+            <div class="modal-header">
+                <h4 class="modal-title">批量操作</h4>
+            </div>
+            <form class="form-horizontal" id="deviceToComPost" name="delpost" role="form" method="post" enctype="post">
+                <div class="form-group" style="margin-right: 0px; padding-top: 10px" id="opreationList">
+                    <label for="opreationList" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">选择操作类型：</label>
+                    <div class="btn-group col-md-7" style="padding-left: 0px;">
+                        <select id="opreation" name="opreation" class="form-control">
+                            <option value=""> --- --- 请选择 --- --- </option>
+                            <option value="1">上线</option>
+                            <option value="0">离线</option>
+                            <option value="2">订阅</option>
+                            <option value="3">发布</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group hidden" style="margin-right: 0px; padding-top: 10px" id="topicCircle">
+                    <label for="topic" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">主题：</label>
+                    <div class="col-md-7" style="padding-left: 0px">
+                        <input type="text" class="form-control" maxlength="200" id="topic" name="topic" value="update/">
+                    </div>
+                </div>
+                <div class="form-group hidden" style="margin-right: 0px;" id="msgCircle">
+                    <label for="message" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">消息：</label>
+                    <div class="col-md-7" style="padding-left: 0px">
+                        <textarea id="message" name="message" rows="3" cols="100" maxlength="200"
+                                  style="overflow:scroll; resize:none;" class="col-md-12"></textarea>
+                    </div>
+                </div>
+                <script>
+                    //切换操作
+                    $("#opreation").bind('input propertychange', function() {
+                        opreateCss($("#opreation").val());
+                    });
+                    function opreateCss(op) {
+                        if (op == "2") {
+                            $("#topicCircle").removeClass("hidden");
+                            $("#msgCircle").addClass("hidden");
+                        } else if (op == "3") {
+                            $("#topicCircle").removeClass("hidden");
+                            $("#msgCircle").removeClass("hidden");
+                        } else {
+                            $("#topicCircle").addClass("hidden");
+                            $("#msgCircle").addClass("hidden");
+                        }
+                    }
+                </script>
+            </form>
+            <div class="modal-footer" id="deviceToComfoot">
+                <button id="deviceToComSave" name="savedel" type="button" class="btn btn-primary"
+                        onclick="doOpreation()">执行
+                </button>
+                <button type="button" class="btn btn-default" onclick="closeOpreation()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--    设备详情    -->
+<div class="modal fade" id="detailDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:800px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="machineModal">虚拟设备信息</h4>
+            </div>
+            <form class="form-horizontal" id="macinfoget" name="macinfoget" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body col-md-12">
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="snumber" class="col-md-3 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">虚拟序列号：</label>
+                        <div class="col-md-8" style="padding-left: 0px">
+                            <input type="text" class="form-control" maxlength="200" id="snumber" name="snumber">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="vrname" class="col-md-3 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">设备名称：</label>
+                        <div class="col-md-8" style="padding-left: 0px">
+                            <input type="text" class="form-control" maxlength="200" id="vrname" name="vrname">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="vrinfo" class="col-md-3 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">设备信息：</label>
+                        <div class="col-md-8" style="padding-left: 0px">
+                                <textarea id="vrinfo" name="vrinfo" rows="10" cols="100" maxlength="2000" wrap="soft"
+                                          style="overflow:scroll; resize: none;" class="col-md-12"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="version" class="col-md-3 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">协议版本：</label>
+                        <div class="btn-group col-md-8" style="padding-left: 0px;">
+                            <select id="version" name="version" class="form-control"><!--suppress ALL-->
+                                <option value="v0.8">v0.8</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="saveinfo()">保存</button>
+                <button type="button" class="btn btn-default" onclick="closeinfo()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--    消息详情    -->
+<div class="modal fade" id="messageDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:600px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="messageModal">虚拟设备消息</h4>
+            </div>
+            <form class="form-horizontal" id="messagefoget" name="macinfoget" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body col-md-12">
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="vrremark" class="col-md-3 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">当前消息：</label>
+                        <div class="col-md-8" style="padding-left: 0px">
+                            <textarea id="vrremark" name="vrremark" rows="5" cols="100" maxlength="200" readonly wrap="off"
+                                      style="overflow:scroll; resize: none;" class="col-md-12"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" onclick="$('#messageDialog').modal('hide');">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/static/js/common.js}"></script>
+<script th:src="@{/static/js/jquery-ui.min.js}"></script>
+<script th:inline="javascript">
+
+    /** -------- 条件查询  start ------------*/
+    //查询按钮
+    function querylist() {
+        var vrdeviceid = $('#vrdeviceid').val();
+        var name = $("#name").val();
+        var remark = $("#remark").val();
+        var onlineStatus = $("#onlineStatus").val();
+
+        location.href = "/DMIL/vrdevice/list?vrdeviceid=" + encodeURI(vrdeviceid) + "&name=" + encodeURI(name)
+            + "&remark=" + encodeURI(remark) + "&status=" + onlineStatus + "&page=1" + "&pageSize=" + $("#pageSize").val();
+    }
+    /** -------- 条件查询  start ------------*/
+
+
+    /** ------------- 虚拟设备详情 start ------------- */
+    //打开添加窗口
+    function openAdd() {
+        $('#detailDialog').modal('show');
+    }
+
+    //关闭详情
+    function closeinfo() {
+        $('#detailDialog').modal('hide');
+
+        //清除缓存
+        currentid = "";
+        $("#snumber").val("");
+        $('#vrname').val("");
+        $('#vrinfo').val("");
+        $('#vrremark').val("");
+    }
+
+    //查看设备详情
+    var currentid = 0;
+
+    function details(id) {
+        currentid = id;
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/vrdevice/devicedetail"
+            , data: {id: id}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    $("#snumber").val(data.obj2.vrdeviceid);
+                    $('#vrname').val(data.obj2.name);
+                    $('#vrinfo').val(data.obj2.info);
+                    $('#version').val(data.obj2.version);
+
+                    //设置数据后展示
+                    $('#detailDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //消息详情
+    function messages(id) {
+        currentid = id;
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/vrdevice/devicedetail"
+            , data: {id: id}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    $('#vrremark').val(data.obj2.remark);
+
+                    //设置数据后展示
+                    $('#messageDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //保存详情
+    function saveinfo() {
+        if (confirm("确定保存信息？")) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/vrdevice/saveinfo"
+                , data: {
+                    id: currentid
+                    , vrdeviceid: $('#snumber').val()
+                    , name: $('#vrname').val()
+                    , info: $('#vrinfo').val()
+                    , version: $('#version').val()
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+
+                    } else {
+                        alert(data.obj1);
+                    }
+                    location.reload();
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+    }
+    /** ------------ 虚拟设备详情 end ------------ **/
+
+
+    /** ---------------设备操作 start ----------------*/
+    //打开批量操作弹窗
+    function openOpreation() {
+        if (idstr.length > 0) {
+            opreateCss("");
+            $("#opreationList").removeClass("hidden");
+            $('#opreationDialog').modal('show');
+        } else {
+            alert("请勾选设备！");
+            return;
+        }
+
+    }
+
+    //关闭操作弹窗
+    function closeOpreation() {
+        $('#opreationDialog').modal('hide');
+
+        //清除缓存
+        currentid = 0;
+        $("#opreation").val("");
+        $("#topic").val("update/");
+        $("#message").val("");
+    }
+
+    //打开单个设备操作弹窗
+    function openSingleOp(op, id) {
+        currentid = id;
+        opreateCss(op);
+        $("#opreation").val(op);
+        $("#opreationList").addClass("hidden");
+        $('#opreationDialog').modal('show');
+    }
+
+    //单个设备上线
+    function vrOnline(id) {
+        if (confirm("使该虚拟设备上线？")) {
+            currentid = id;
+            doingOp('1');
+        }
+    }
+
+    //单个设备离线
+    function vrOffline(id) {
+        if (confirm("使该虚拟设备离线？")) {
+            currentid = id;
+            doingOp('0');
+        }
+    }
+
+    //执行操作
+    function doOpreation() {
+        var op = $("#opreation").val();
+        if (op == '') {
+            alert("请选择操作类型！");
+            return;
+        } else if (op == '2') {
+            if ($("#topic").val() == '') {
+                alert("请填写主题！");
+                return;
+            }
+        } else if (op == '3') {
+            if ($("#topic").val() == '') {
+                alert("请填写主题！");
+                return;
+            }
+            if ($("#message").val() == '') {
+                alert("请填写消息！");
+                return;
+            }
+        }
+        doingOp(op);
+    }
+    function doingOp(op) {
+        if (currentid == 0) {
+            idmap = getidmap();
+        } else {
+            idmap = currentid + ":" + currentid;
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/vrdevice/doOpreation"
+            , data: {
+                idstr: "{" + idmap + "}",
+                opreation: op,
+                topic: $('#topic').val(),
+                message: $('#message').val()
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    alert("操作成功！")
+                } else {
+                    alert(data.obj1);
+                    currentid = 0;
+                }
+                location.reload();
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+    /** ---------------设备操作 end ----------------*/
+
+</script>
+</body>
+</html>

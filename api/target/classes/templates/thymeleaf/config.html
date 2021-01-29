@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-cn" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="commons::common_header"><!-- 引入头文件 -->
+</head>
+<body>
+<link rel="stylesheet" th:href="@{/static/css/zTreeStyle.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui.min.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui-1.10.4.custom.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/bootstrap-datetimepicker.css}"/>
+<nav th:replace="commons::common_nav"></nav><!-- 引入导航栏 -->
+<div th:replace="commons::common_pwdmodal"></div><!-- 引入密码修改框 -->
+<!-- 系统日志模块整理视图 -->
+<div class="container" style="width: 1500px; margin-top: 50px">
+    <div class="panel panel-default" style=" width: 98%; margin-left: 1%;">
+        <!-- 表头 -->
+        <div class="panel-heading">
+            <div class="pull-right">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="addconfig()" id="userAdd">
+                        新增配置
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" onclick="location.reload()">
+                        刷新
+                    </button>
+                </div>
+            </div>
+            <h5> 系统配置 </h5>
+        </div>
+
+        <!-- 表格主体 -->
+        <div class="panel-body">
+            <!-- 主体左侧树状目录 -->
+            <div class="panel panel-default col-sm-2" style="overflow-y:auto; overflow-x:auto; width:280px; height: 650px; padding-top: 10px">
+                <ul id="configTree" class="ztree"></ul>
+            </div>
+
+            <!-- 主体右侧软件信息表格 -->
+            <div class="panel panel-default col-sm-10" style=" left:10px; width:1100px; height:650px;">
+                <div class="panel-heading " style="padding: 0px;">
+                    <div style="display: inline-block;width: 100%;">
+                        <div class=" col-sm-12">
+                            <form class="form-inline" role="form" id="queryform" name="queryform" action="/DMIL/config/list" method="post">
+                                <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                                <input id="type" type="hidden" th:value="${type}"><!-- 焦点所在节点 -->
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="name" name="name" th:value="${name}"
+                                           placeholder="请输入配置名称" maxlength="100"
+                                           style="width: 200px;padding-bottom: 0px;padding-top: 0px;height: 34px;"
+                                           onkeyup="this.value=this.value.replace(/[^\uFF00-\uFFFF\u4e00-\u9fa5\w\@\&\-]/g,'')">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="number" id="configid" name="configid" th:value="${configid}"
+                                           placeholder="请输入配置代码" maxlength="100"
+                                           style="width: 200px;padding-bottom: 0px;padding-top: 0px;height: 34px;"
+                                           onkeyup="this.value=this.value.replace(/[^\uFF00-\uFFFF\u4e00-\u9fa5\w\@\&\-]/g,'')">
+                                </div>
+                                <div class="btn-group" style="margin-top: 5px;margin-bottom: 5px;">
+                                    <div class="input-group date form_datetime"><!--suppress ALL-->
+                                        <input size="20" type="text" id="startDate_createTime"
+                                               name="startDate_createTime" th:value="${start}" class="form-control"
+                                               readonly placeholder="请选择开始时间">
+                                            <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>
+                                <div class="btn-group" style="margin-top: 5px;margin-bottom: 5px;">
+                                    <div class="input-group date form_datetime"><!--suppress ALL-->
+                                        <input size="20" type="text" id="endDate_createTime" name="endDate_createTime"
+                                               th:value="${end}" class="form-control" readonly placeholder="请选择结束时间">
+                                            <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-primary" onclick="qurrybytime()">查询</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <table class="table table-striped line row scroll-bar" style="table-layout: fixed; display:block; height: 500px; overflow: auto"><!--suppress ALL-->
+                    <thead th:if="${datalist.size() > 0}">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="checkRow_head" name="checkRow_" value="" onclick="checkPageSelected_(this);"/>
+                        </th>
+                        <th>配置代码</th>
+                        <th>配置名称</th>
+                        <th>配置类型</th>
+                        <th>创建时间</th>
+                        <th>状态</th>
+                        <th>备注</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead><!--suppress ALL-->
+                    <tbody th:if="${datalist.size() > 0}">
+                    <!--suppress ALL-->
+                    <tr th:each="config : ${datalist}">
+                        <th scope="row"><!--suppress ALL-->
+                            <input type="checkbox" name="checkRow_" onclick="checkRowSelected_(this)"/>
+                        </th><!--suppress ALL-->
+                        <td th:text="${config.configid}" style="width: 10%"></td><!--suppress ALL-->
+                        <td th:text="${config.name}" style="width: 15%"></td><!--suppress ALL-->
+                        <td style="width: 10%;"><!--suppress ALL-->
+                            <label th:if="${config.type == 1}">系统参数</label><!--suppress ALL-->
+                            <label th:if="${config.type == 2}">设备参数</label>
+                        </td><!--suppress ALL-->
+                        <td th:text="${#dates.format(config.createtime,'yyyy-MM-dd HH:mm:ss')}"  style="width: 15%"></td><!--suppress ALL-->
+                        <td style="width: 10%;"><!--suppress ALL-->
+                            <label th:if="${config.status == 0}" style="color:red;">未生效</label><!--suppress ALL-->
+                            <label th:if="${config.status == 1}" style="color:deepskyblue;">已生效</label>
+                        </td><!--suppress ALL-->
+                        <td th:text="${config.remark}"  style="width: 20%"></td>
+                        <td style="width: 20%;"><!--suppress ALL-->
+                            <button th:if="${config.status == 0}" type="button" class="btn-xs btn-primary"
+                                    th:onclick="|configEnable(${config.id})|">
+                                启用
+                            </button><!--suppress ALL-->
+                            <button th:if="${config.status == 1}" type="button" class="btn-xs btn-danger"
+                                    th:onclick="|configUnable(${config.id})|">
+                                禁用
+                            </button><!--suppress ALL-->
+                            <button type="button" class="btn-xs btn-danger"
+                                    th:onclick="|configDelete(${config.id})|">
+                                删除
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody><!--suppress ALL-->
+                    <tbody th:if="${datalist.size() == 0}">
+                    <div class="pagenodate" style="padding-top: 50px"><label style="color:red;">没有符合您要求的记录</label></div>
+                    </tbody>
+                </table>
+                <!-- 分页组件 -->
+                <div th:replace="commons::common_paginater"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加配置框 -->
+<div class="modal fade" id="detailDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:550px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="userModal">新增配置</h4>
+            </div>
+            <form class="form-horizontal" id="userinfo" name="userinfo" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body text-nowrap">
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" style="color:red;">*</label>&nbsp;&nbsp;
+                            <label class="control-label" for="configcode">配置代码：</label>
+                        </div>
+                        <div class="col-md-6" style="padding-left: 0px">
+                            <input type="number" maxlength="50" class="form-control " id="configcode" name="configcode"
+                                   placeholder="请填写配置代码" value="">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" style="color:red;">*</label>&nbsp;&nbsp;
+                            <label class="control-label" for="configname">配置名称：</label>
+                        </div>
+                        <div class="col-md-6" style="padding-left: 0px">
+                            <input type="text" maxlength="50" class="form-control " id="configname" name="configname"
+                                   placeholder="请填写配置名称" value="">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" style="color:red;">*</label>&nbsp;&nbsp;
+                            <label class="control-label" for="configname">配置类型：</label>
+                        </div>
+                        <div class="btn-group col-md-6" style="padding-left: 0px;">
+                            <select id="configtype" name="configtype" class="form-control">
+                                <option value="1">系统参数</option>
+                                <option value="2">设备参数</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" style="color:red;">*</label>&nbsp;&nbsp;
+                            <label class="control-label" for="configerp" id="linkinfo">关联内容：</label>
+                        </div>
+                        <div class="col-md-6" style="padding-left: 0px">
+                            <input type="text" maxlength="50" class="form-control " id="configerp" name="configerp"
+                                   placeholder="请填写关联类容" value="">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" for="configremark">备注：</label>
+                        </div>
+                        <div class="col-md-6" style="padding-left: 0px">
+                            <textarea id="configremark" name="configremark" rows="3" cols="100" maxlength="200"
+                                      style="resize: none;" class="col-md-12"></textarea>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="saveinfo()">保存</button>
+                <button type="button" class="btn btn-default" onclick="closeinfo()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/static/js/common.js}"></script>
+<script th:src="@{/static/js/jquery-ui.min.js}"></script>
+<script th:src="@{/static/js/jquery.ztree.all-3.5.min.js}"></script>
+<script th:src="@{/static/js/bootstrap-datetimepicker.js}"></script>
+<script th:src="@{/static/js/bootstrap-datetimepicker.zh-CN.js}"></script>
+<script th:inline="javascript">
+    /**---- 初始化日历控件 ----*/
+    $(".form_datetime").datetimepicker({
+        format: "yyyy-mm-dd hh:ii:00",
+        autoclose: true,
+        todayBtn: true,
+        clearBtn: true,
+        language: 'zh-CN',
+        pickerPosition: "bottom-left",
+        minView: 0
+    });
+
+    /** -----表格左侧树状目录加载组方法 start----- **/
+    /* 设置树形目录参数 */
+    var setting = {
+        view: {
+            selectedMulti: false
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        callback: {
+            beforeClick: zTreeBeforeClick
+        }
+    };
+
+    /* 初始化查询,保留之前的选中状态 */
+    var zNodes = [[${menuTreeBeans}]];
+    var zTree;
+    $(document).ready(function () {
+        zTree = $.fn.zTree.init($("#configTree"), setting, zNodes);
+        var treeObj = $.fn.zTree.getZTreeObj("syslogTree");
+        var type = $('#type').val();
+        var node = null;
+        if (type != "") {
+            node = treeObj.getNodeByParam("id", type, null);
+        }
+        if (node != null) {
+            $("#" + node.tId + "_a").attr('class', 'curSelectedNode');
+        }
+    });
+
+    /* 点击项目树查询: treeNode.id（为节点id），treeNode.pid（父节点id），treeNode.tId（菜单名_节点自然顺序） */
+    function zTreeBeforeClick(treeId, treeNode, clickFlag) {
+        var start = $("#startDate_createTime").val();
+        var end = $("#endDate_createTime").val();
+        if (treeNode.getParentNode() == null) {
+            /*若没有父节点,则父节点为根节点，向一级菜单跳转*/
+            location.href = "/DMIL/config/list?type=0&start="+ start +"&end="+ end + "&pageSize=" + $("#pageSize").val();
+        } else {
+            /*若父节点存在，则该节点为叶子节点，根据条件跳转*/
+            location.href = "/DMIL/config/list?type=" + treeNode.id  +"&start="+ start +"&end="+ end + "&pageSize=" + $("#pageSize").val();
+        }
+    };
+    /** -----表格左侧树状目录加载组方法 end----- **/
+
+
+    /** ------ 点击查询按钮查询树状目录 -------- */
+    function qurrybytime() {
+        var type = $('#type').val();
+        var start = $("#startDate_createTime").val();
+        var end = $("#endDate_createTime").val();
+        var configid = $("#configid").val();
+        var name = $("#name").val();
+
+        if((start != "" && end == "")||(start == "" && end != "")){
+            alert("请将起止时间选择完整！")
+            return
+        }
+        if(start > end){
+            alert("开始时间不得晚于结束时间！")
+            return
+        }
+        location.href = "/DMIL/config/list?type="+ type +"&start="+ start +"&end="+ end
+            +"&configid="+ configid +"&name="+ encodeURI(name)
+            +"&page=1" + "&pageSize=" + $("#pageSize").val();
+    }
+
+    //配置类型，监听方法
+    $("#configtype").change(function(){
+        //更改关联内容
+        if ($('#configtype').val() == '2') {
+            $('#linkinfo').text("关联软件erp：");
+        } else {
+            $('#linkinfo').text("关联内容：");
+        }
+    });
+    /** ------ 点击查询按钮查询树状目录 -------- */
+
+    /** ----- 新增配置 start ----- **/
+    /*打开新增用户弹窗*/
+    function addconfig() {
+        $('#detailDialog').modal('show');
+    }
+
+    /*关闭新增用户弹窗*/
+    function closeinfo() {
+        $('#detailDialog').modal('hide');
+
+        //清除缓存
+        $('#configcode').val("");
+        $('#configname').val("");
+        $('#configtype').val("");
+        $('#configerp').val("");
+        $('#configremark').val("");
+    }
+
+    /*保存详情*/
+    function saveinfo() {
+        var configcode = $('#configcode').val();
+        var configname = $('#configname').val();
+        var configtype = $('#configtype').val();
+        var configerp = $('#configerp').val();
+        var configremark = $('#configremark').val();
+
+        if (configcode == "") {
+            alert("请填写配置代码！");
+            $('#configcode').focus();
+            return;
+        }
+        if (configname == "") {
+            alert("请填写配置名称！");
+            $('#configname').focus();
+            return;
+        }
+        if (configtype == "2" && configerp == "") {
+            alert("请填写软件erp！");
+            $('#configerp').focus();
+            return;
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/config/addconfig"
+            , data: {
+                configcode: configcode
+                , configname: configname
+                , configtype: configtype
+                , configerp: configerp
+                , configremark: configremark
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    location.reload();
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+    /** ----- 新增配置 end ----- **/
+
+
+    /** ----- 用户操作 start ----- **/
+    //启用用户
+    function configEnable(id) {
+        editConfiginfo(id, "1");
+    }
+
+    //禁用用户
+    function configUnable(id) {
+        editConfiginfo(id, "0");
+    }
+
+    //删除用户
+    function configDelete(id) {
+        editConfiginfo(id, "");
+    }
+
+    /*修改信息*/
+    function editConfiginfo(id, status) {
+        var msg = "";
+        if (status != "") {
+            if (status == "0") {
+                msg = "确定禁用该配置？";
+            } else if (status == "1") {
+                msg = "确定启用该配置？";
+            }
+        } else {
+            msg = "确定删除该配置？";
+        }
+
+        if (confirm(msg)) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/config/editconfig"
+                , data: {
+                    id: id
+                    ,status: status
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        location.reload();
+                    } else {
+                        alert(data.obj1);
+                    }
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+    }
+    /** ----- 用户操作 end ----- **/
+</script>
+</body>
+</html>

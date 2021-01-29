@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="zh-cn" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="commons::common_header"><!-- 引入头文件 -->
+</head>
+<body>
+<link rel="stylesheet" th:href="@{/static/css/zTreeStyle.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui.min.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui-1.10.4.custom.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/bootstrap-table.css}"/>
+<nav th:replace="commons::common_nav"></nav><!-- 引入导航栏 -->
+<div th:replace="commons::common_pwdmodal"></div><!-- 引入密码修改框 -->
+<!-- 设备管理模块整理视图 -->
+<div class="container" style="width: 1500px; margin-top: 50px">
+    <div class="panel panel-default" style=" width: 98%; margin-left: 1%;">
+        <!-- 表头功能按键 -->
+        <div class="panel-heading">
+            <div class="pull-right">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-info" onclick="discverDevice()" id="newDevice">
+                        发现设备
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="deviceToGroup()" id="devicetogroup">
+                        设备分组
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" onclick="location.reload()">
+                        刷新
+                    </button>
+                </div>
+            </div>
+            <h5> 设备发现 </h5>
+        </div>
+
+        <!-- 表格主体 -->
+        <form class="form-inline" role="form" id="formaboutdevice" name="formaboutdevice" action="/DMIL/device/list"
+              method="post">
+            <div class="panel-body">
+                <!-- 主体左侧树状目录 -->
+                <div class="panel panel-default col-sm-2"
+                     style="overflow-y:auto; overflow-x:auto; width:280px; height: 650px;">
+                    <div style="width:260px; padding-top: 10px">
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="projectid" type="hidden" th:value="${projectid}"><!-- 焦点所在子节点 -->
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="companyid" type="hidden" th:value="${companyid}"><!-- 焦点所在父节点 -->
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="msg" type="hidden" th:value="${msg}"><!-- 下载消息 -->
+                    </div>
+                    <ul id="deviceTree" class="ztree"></ul>
+                    <!-- 菜单编辑组件 -->
+                    <!--<div th:replace="commons::common_menu_editer"></div>-->
+
+                    <!-- 添加分组 -->
+                    <div class="panel panel-footer hidden" id="groupEdit"
+                         style="text-align:center; width:90%; position:absolute; bottom:0px;padding-bottom:5px; margin-bottom:0">
+                        <button type="button" style="width: 40%; " class="btn btn-primary" onclick="groupAdd()">
+                            添加分组
+                        </button>&nbsp;&nbsp;
+                        <button type="button" style="width: 40%; " class="btn btn-danger" onclick="groupDel()">
+                            删除分组
+                        </button>
+                    </div>
+                    <script th:inline="javascript">
+                        //非管理员才可添加分组
+                        if ($("#currentUserId").val() != "888") {
+                            $("#groupEdit").removeClass("hidden");
+                        }
+                    </script>
+                </div>
+
+                <!-- 主体右侧软件信息表格 -->
+                <div class="panel panel-default col-sm-10" style="left:10px; width:1100px; height:650px;">
+                    <div class="panel-heading " style="padding: 0px;">
+                        <div style="display: inline-block;width: 100%; padding-top: 10px">
+                            <div class=" col-sm-12">
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="termsn" name="termsn" th:value="${termsn}"
+                                           placeholder="请输入终端序列号" maxlength="100"
+                                           style="width: 150px;padding-bottom: 0px;padding-top: 0px;height: 34px;"
+                                           onkeyup="this.value=this.value.replace(/[^\uFF00-\uFFFF\u4e00-\u9fa5\w\@\&\-]/g,'')">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="remark" name="remark" th:value="${remark}"
+                                           placeholder="请输入备注名称" maxlength="100"
+                                           style="width: 150px;padding-bottom: 0px;padding-top: 0px;height: 34px;">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <select id="terminfo" name="terminfo" class="form-control" style="width: 150px"
+                                            th:value="${terminfo}">
+                                        <option value="" style="color:lightgrey;">请选择设备型号</option>
+                                        <!--suppress ALL-->
+                                        <option th:each="term : ${termlist}" th:value="${term.terminfo}"
+                                                th:text="${term.terminfo}"
+                                                th:selected="${term.terminfo == terminfo?'selected':'false'}">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="btn-group" role="group"><!--suppress ALL-->
+                                    <input type="hidden" id="onlineStatus" th:value="${status}">
+                                    <button id="onlineCss" type="button" class="btn dropdown-toggle" style="width: 95px"
+                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span id="statusflag">全部状态</span>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="javascript:queryByStatus('')">全部状态</a></li>
+                                        <li><a href="javascript:queryByStatus('1')">在线</a></li>
+                                        <li><a href="javascript:queryByStatus('0')">离线</a></li>
+                                    </ul>
+                                    <script th:inline="javascript">
+                                        /* 设备状态下拉按钮预处理 */
+                                        $(document).ready(function () {
+                                            var status = [[${status}]];
+                                            if (status == 1) {
+                                                $("#statusflag").text("在线");
+                                                $("#onlineCss").addClass("btn-info");
+                                            } else if (status == 0) {
+                                                $("#statusflag").text("离线");
+                                                $("#onlineCss").addClass("btn-danger");
+                                            } else {
+                                                $("#statusflag").text("全部状态");
+                                                $("#onlineCss").addClass("btn-default");
+                                            }
+                                            return;
+                                        });
+
+                                        function queryByStatus(sta) {
+                                            if (sta == '1') {
+                                                $("#onlineStatus").val(1);
+                                            } else if (sta == '0') {
+                                                $("#onlineStatus").val(0);
+                                            } else {
+                                                $("#onlineStatus").val('');
+                                            }
+                                            querylist();
+                                        }
+                                    </script>
+                                </div>
+                                <div class="btn-group" role="group"><!--suppress ALL-->
+                                    <input type="hidden" id="isgroup" th:value="${isgroup}">
+                                    <button id="groupCss" type="button" class="btn dropdown-toggle" style="width: 95px"
+                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span id="groupflag">全部状态</span>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="javascript:queryByGroup('')">所有设备</a></li>
+                                        <li><a href="javascript:queryByGroup('1')">已分组</a></li>
+                                        <li><a href="javascript:queryByGroup('0')">未分组</a></li>
+                                    </ul>
+                                    <script th:inline="javascript">
+                                        /* 设备状态下拉按钮预处理 */
+                                        $(document).ready(function () {
+                                            var isgroup = [[${isgroup}]];
+                                            if (isgroup == 1) {
+                                                $("#groupflag").text("已分组");
+                                                $("#groupCss").addClass("btn-success");
+                                            } else if (isgroup == 0) {
+                                                $("#groupflag").text("未分组");
+                                                $("#groupCss").addClass("btn-warning");
+                                            } else {
+                                                $("#groupflag").text("所有设备");
+                                                $("#groupCss").addClass("btn-default");
+                                            }
+                                            return;
+                                        });
+
+                                        function queryByGroup(isGroup) {
+                                            if (isGroup == '1') {
+                                                $("#isgroup").val(1);
+                                            } else if (isGroup == '0') {
+                                                $("#isgroup").val(0);
+                                            } else {
+                                                $("#isgroup").val('');
+                                                $("#companyid").val('');
+                                                $("#projectid").val('');
+                                            }
+                                            querylist();
+                                        }
+                                    </script>
+                                </div>&nbsp;&nbsp;
+                                <div class="btn-group">
+                                    <button id="queryBtn2" type="button" class="btn btn-primary"
+                                            onclick="querylist()">
+                                        查询
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-striped scroll-bar"
+                           style="table-layout: fixed; display:block; height: 500px; overflow: auto">
+                        <!--suppress ALL-->
+                        <thead th:if="${datalist.size() > 0}">
+                        <tr>
+                            <th><!--suppress ALL-->
+                                <input type="checkbox" id="checkRow_head" name="checkRow_" value=""
+                                       th:onclick="|checkPageSelected_(this);loadallids(this, ${datalist})|"/>
+                            </th>
+                            <th>终端序列号</th>
+                            <th>备注名称</th>
+                            <th>设备型号</th>
+                            <th>最后通信时间</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() > 0}">
+                        <!--suppress ALL-->
+                        <tr th:each="device : ${datalist}">
+                            <th scope="row"><!--suppress ALL-->
+                                <input type="checkbox" name="checkRow_"
+                                       th:onclick="|checkRowSelected_(this);loadcheck(this, ${device.id})|"/>
+                            </th><!--suppress ALL-->
+                            <td th:text="${device.termsn}" style="width: 20%;"></td><!--suppress ALL-->
+                            <td th:text="${device.remark}" style="width: 20%;"></td><!--suppress ALL-->
+                            <td th:text="${device.terminfo}" style="width: 10%;"></td><!--suppress ALL-->
+                            <td th:text="${#dates.format(device.moditytime,'yyyy-MM-dd HH:mm:ss')}"
+                                style="width: 20%;"></td><!--suppress ALL-->
+                            <!--suppress ALL-->
+                            <td style="width: 10%;"><!--suppress ALL-->
+                                <label th:if="${device.status == 0}" style="color:red;">离线</label><!--suppress ALL-->
+                                <label th:if="${device.status == 1}" style="color:deepskyblue;">在线</label>
+                            </td>
+                            <td style="width: 20%;"><!--suppress ALL-->
+                                <button type="button" class="btn-xs btn-info" th:onclick="|devicedetail(${device.id})|">
+                                    查看详情
+                                </button><!--suppress ALL-->&nbsp;&nbsp;
+                                <button th:if="${device.termtype != 2}" type="button" class="btn-xs btn-primary"
+                                        th:onclick="|deviceupdate(${device.id})|">
+                                    升级
+                                </button><!--suppress ALL-->
+                                <button th:if="${device.termtype == 2}" type="button" class="btn-xs btn-warning"
+                                        th:onclick="|deviceupdate(${device.id})|">
+                                    升级中
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() == 0}">
+                        <div class="pagenodate" style="padding-top: 50px"><label style="color:red;">没有符合您要求的记录</label>
+                        </div>
+                        </tbody>
+                    </table>
+                    <!-- 分页组件 -->
+                    <div th:replace="commons::common_paginater"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 添加分组框 -->
+<div class="modal fade" id="groupAddDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header">
+                <h4 class="modal-title">添加分组</h4>
+            </div>
+            <form class="form-horizontal" id="addpost" name="addpost" role="form" method="post" enctype="post">
+                <div class="form-group" style="margin-right: 0px; padding-top: 10px">
+                    <label for="groupadd" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">分组名称：</label>
+                    <div class="col-md-8" style="padding-left: 0px">
+                        <input type="text" maxlength="50" class="form-control " id="groupadd" name="groupadd"
+                               placeholder="请输入分组名称">
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer" id="refoot">
+                <button id="saveAdd" name="saveAdd" type="button" class="btn btn-primary"
+                        onclick="savegroup()">保存
+                </button>
+                <button type="button" class="btn btn-default" onclick="closegroupadd()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除分组框 -->
+<div class="modal fade" id="groupDelDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header">
+                <h4 class="modal-title">删除分组</h4>
+            </div>
+            <form class="form-horizontal" id="delpost" name="delpost" role="form" method="post" enctype="post">
+                <div class="form-group" style="margin-right: 0px; padding-top: 10px">
+                    <label for="groupDelList" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">选择分组：</label>
+                    <div class="btn-group col-md-6" style="padding-left: 0px;">
+                        <select id="groupDelList" name="groupDelList" class="form-control">
+                        </select>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer" id="delfoot">
+                <button id="savedel" name="savedel" type="button" class="btn btn-danger"
+                        onclick="delgroup()">删除
+                </button>
+                <button type="button" class="btn btn-default" onclick="closegroupdel()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 设备分组框  管理员 -->
+<div class="modal fade" id="deviceToComDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header">
+                <h4 class="modal-title">选择公司</h4>
+            </div>
+            <form class="form-horizontal" id="deviceToComPost" name="delpost" role="form" method="post" enctype="post">
+                <div class="form-group" style="margin-right: 0px; padding-top: 10px">
+                    <label for="deviceToComList" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">选择公司：</label>
+                    <div class="btn-group col-md-6" style="padding-left: 0px;">
+                        <select id="deviceToComList" name="deviceToComList" class="form-control">
+                        </select>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer" id="deviceToComfoot">
+                <button id="deviceToComSave" name="savedel" type="button" class="btn btn-primary"
+                        onclick="deviceToComSave()">保存
+                </button>
+                <button type="button" class="btn btn-default" onclick="deviceToComClose()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 设备分组框  用户 -->
+<div class="modal fade" id="deviceToGroupDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header">
+                <h4 class="modal-title">选择分组</h4>
+            </div>
+            <form class="form-horizontal" id="deviceToGroupPost" name="delpost" role="form" method="post"
+                  enctype="post">
+                <div class="form-group" style="margin-right: 0px; padding-top: 10px">
+                    <label for="deviceToGroupList" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">选择分组：</label>
+                    <div class="btn-group col-md-6" style="padding-left: 0px;">
+                        <select id="deviceToGroupList" name="deviceToGroupList" class="form-control">
+                        </select>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer" id="deviceToGroupfoot">
+                <button id="deviceToGroupSave" name="savedel" type="button" class="btn btn-primary"
+                        onclick="deviceToGroupSave()">保存
+                </button>
+                <button type="button" class="btn btn-default" onclick="deviceToGroupClose()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--  设备扫描列表  -->
+<div class="modal fade" id="DiscoverListDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog modal-body">
+        <div class="panel panel-info" style="width: 500px;">
+            <div class="panel-heading">
+                <h4 class="panel-title" id="discoverModal">设备扫描</h4>
+            </div>
+            <img th:src="@{/static/images/loading1.gif}" id="loading">
+            <form class="form-horizontal" id="discoverform" name="discoverform" role="form" method="post"
+                  enctype="multipart/form-data">
+                <table id="discovertable" class="table table-striped scroll-bar"
+                       style="table-layout:fixed; word-break:break-all; height: 400px; overflow:auto">
+                    <thead>
+                    <tr>
+                        <th data-checkbox="true" data-select="false"></th>
+                        <th data-field="id" class="hidden"></th>
+                        <th data-field="remark" width="40%">设备说明</th>
+                        <th data-field="terminfo" width="30%">设备型号</th>
+                        <th data-field="deviceid" width="30%">设备编号</th>
+                    </tr>
+                    </thead>
+                    <tbody id="discoverList">
+
+                    </tbody>
+                </table>
+            </form>
+            <div class="modal-footer" id="versionfoot">
+                <button type="button" class="btn btn-info" onclick="discverDevice()">
+                    继续扫描
+                </button>
+                <button id="postType" name="postType" type="button" class="btn btn-primary"
+                        onclick="addDevice()">添加设备
+                </button>
+                <button type="button" class="btn btn-default" onclick="closeDiscover()">关闭扫描</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--    设备详情    -->
+<div class="modal fade" id="detailDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:750px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="machineModal">设备信息</h4>
+            </div>
+            <form class="form-horizontal" id="macinfoget" name="macinfoget" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body col-md-12">
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="devicetype" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">设备型号：</label>
+                        <div class="col-md-7" style="padding-left: 0px">
+                            <input type="text" class="form-control " id="devicetype" name="devicetype" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="snumber" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">终端序列号：</label>
+                        <div class="col-md-7" style="padding-left: 0px">
+                            <input type="text" class="form-control " id="snumber" name="snumber" readonly>
+                            <input type="text" class="form-control " id="deviceid" style="display: none">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="ctratetime" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">入网时间：</label>
+                        <div class="col-md-7" style="padding-left: 0px">
+                            <input type="text" class="form-control " id="ctratetime" name="ctratetime" readonly
+                                   decorator="com.routon.plcloud.common.decorator.PageDateTimeDecorator">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="moditytime" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">最后通信时间：</label>
+                        <div class="col-md-7" style="padding-left: 0px">
+                            <input type="text" class="form-control " id="moditytime" name="moditytime" readonly
+                                   decorator="com.routon.plcloud.common.decorator.PageDateTimeDecorator">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="status" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">在线状态：</label>
+                        <div class="col-md-7" style="padding-left: 0px">
+                            <input type="text" class="form-control " id="status" name="status" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="company" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">公司：</label>
+                        <div class="btn-group col-md-7" style="padding-left: 0px;">
+                            <!--suppress ALL-->
+                            <select id="company" name="company" class="form-control">
+                            </select>
+                        </div>
+                        <script th:inline="javascript">
+                            //非管理员无法修改公司
+                            if ($("#currentUserId").val() != "888") {
+                                $("#company").attr("disabled", "disabled");
+                            }
+                        </script>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="groups" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">分组：</label>
+                        <div class="btn-group col-md-7" style="padding-left: 0px;">
+                            <!--suppress ALL-->
+                            <select id="groups" name="groups" class="form-control">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="contact" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">联系人：</label>
+                        <div class="col-md-7" style="padding-left: 0px">
+                            <input type="text" maxlength="50" class="form-control " id="contact" name="contact">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="telno" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">联系电话：</label>
+                        <div class="col-md-7" style="padding-left: 0px">
+                            <input type="tel" maxlength="11" class="form-control " id="telno" name="telno">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="deviceremark" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">备注名称：</label>
+                        <div class="col-md-7" style="padding-left: 0px">
+                            <input type="text" maxlength="100" class="form-control " id="deviceremark"
+                                   name="deviceremark">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <label for="link" class="col-md-4 control-label"
+                               style="padding-left: 0px;padding-right: 5%;">实时数据：<br><br>
+                            <button type="button" class="btn btn-success" onclick="dataUpdate()">刷新</button>
+                        </label>
+                        <div class="col-md-7" style="padding-left: 0px">
+                                <textarea id="link" name="link" rows="8" cols="120" maxlength="200"
+                                          style="resize: none;" class="col-md-12" readonly></textarea>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="saveinfo()">保存</button>
+                <button type="button" class="btn btn-default" onclick="closeinfo()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script th:src="@{/static/js/common.js}"></script>
+<script th:src="@{/static/js/jquery-ui.min.js}"></script>
+<script th:src="@{/static/js/jquery.ztree.all-3.5.min.js}"></script>
+<script th:src="@{/static/js/bootstrap-table.js}"></script>
+<script th:src="@{/static/js/bootstrap-table-zh-CN.js}"></script>
+<script th:inline="javascript">
+    /** ----------初始化表格控件-------- */
+    $(document).ready(function () {
+        $("#discovertable").bootstrapTable({
+            striped: true
+        });
+
+        //打开扫描器
+        scanOpen();
+    });
+
+    /** -----表格左侧树状目录加载组方法 start----- **/
+    /* 设置树形目录参数 */
+    var setting = {
+        view: {
+            selectedMulti: false
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        callback: {
+            beforeClick: zTreeBeforeClick
+        }
+    };
+
+    /* 初始化查询,保留之前的选中状态 */
+    var zNodes = [[${menuTreeBeans}]];
+    var zTree;
+    $(document).ready(function () {
+        zTree = $.fn.zTree.init($("#deviceTree"), setting, zNodes);
+        var treeObj = $.fn.zTree.getZTreeObj("deviceTree");
+        var companyid = $('#companyid').val();
+        var projectid = $('#projectid').val();
+        var msg = $('#msg').val();
+        var node = null;
+        if (companyid != "") {
+            node = treeObj.getNodeByParam("id", companyid, null);
+        }
+        if (projectid != "" && projectid != 0) {
+            node = treeObj.getNodeByParam("id", projectid, null);
+        }
+        if (node != null) {
+            $("#" + node.tId + "_a").attr('class', 'curSelectedNode');
+        }
+
+        //显示回调信息
+        if (msg != "") {
+            alert(msg);
+        }
+
+        //批量升级按钮状态
+        if (document.getElementsByName('checkRow_').length == 0) {
+            $("#updateforlist").attr("disabled", "true");
+            $("#devicetogroup").attr("disabled", "true");
+        }
+    });
+
+    /* 点击项目树查询: treeNode.id（为节点id），treeNode.pid（父节点id），treeNode.tId（菜单名_节点自然顺序） */
+    function zTreeBeforeClick(treeId, treeNode, clickFlag) {
+        if (treeNode.getParentNode() == null) {
+            /*若没有父节点,则父节点为根节点，向一级菜单跳转*/
+            location.href = "/DMIL/otherdevice/list?companyid=" + treeNode.id + "&projectid=" + "&pageSize=" + $("#pageSize").val();
+        } else {
+            /*若父节点存在，则该节点为叶子节点，根据条件跳转*/
+            location.href = "/DMIL/otherdevice/list?companyid=" + treeNode.pid + "&projectid=" + treeNode.id + "&pageSize=" + $("#pageSize").val();
+        }
+    };
+
+    /*点击查询按钮查询树状目录*/
+    function searchDeviceByName() {
+        var projectname = $("#projectname").val();
+        var projectid = $('#projectid').val();
+        var orderid = $('#orderid').val();
+        var tourl = "";
+        if (projectname != "") {
+            tourl = "/DMIL/otherdevice/list?projectname=" + encodeURI(projectname) + "&pageSize=" + $("#pageSize").val();
+        } else {
+            tourl = "/DMIL/otherdevice/list?projectid=" + projectid + "&orderid=" + orderid + "&pageSize=" + $("#pageSize").val();
+        }
+        location.href = tourl;
+    }
+
+    /** -----表格左侧树状目录加载组方法 end----- **/
+
+    /** -------- 条件查询  start ------------*/
+    //查询按钮
+    function querylist() {
+        var projectid = $('#projectid').val();
+        var companyid = $("#companyid").val();
+        var msg = $("#msg").val();
+
+        var termsn = $("#termsn").val();
+        var onlineStatus = $("#onlineStatus").val();
+        var isgroup = $("#isgroup").val();
+
+        var remark = $("#remark").val();
+        var terminfo = $("#terminfo").val();
+
+        location.href = "/DMIL/otherdevice/list?companyid=" + companyid + "&projectid=" + projectid + "&msg=" + encodeURI(msg)
+            + "&termsn=" + encodeURI(termsn) + "&remark=" + encodeURI(remark) + "&terminfo=" + terminfo
+            + "&status=" + onlineStatus + "&isgroup=" + isgroup + "&page=1" + "&pageSize=" + $("#pageSize").val();
+    }
+
+    //公司变更加载分组方法，监听方法
+    $("#company").change(function () {
+        //加载版本
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/menu/getMenu"
+            , data: {
+                rank: 2,
+                pid: $("#company").val()
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //循环组织设备列表
+                    var grouplist = "<option value='' style='color:lightgrey;'>请选择分组</option>";
+                    for (var i = 0; i < data.obj.length; i++) {
+                        grouplist = grouplist + "<option value='" + data.obj[i].id + "'>" + data.obj[i].name + "</option>";
+                    }
+                    $('#groups').html(grouplist);
+                } else {
+                    console.log(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                console.log("系统异常！");
+            }
+        });
+    });
+
+    /** -------- 条件查询  start ------------*/
+
+    /** ----- 普通用户分组操作 start ----- **/
+    //分组添加框显示
+    function groupAdd() {
+        $('#groupadd').val("");
+        $('#groupAddDialog').modal('show');
+    }
+
+    /*关闭分组添加框*/
+    function closegroupadd() {
+        $('#groupAddDialog').modal('hide');
+    }
+
+    //保存分组
+    function savegroup() {
+        var groupName = $("#groupadd").val();
+        if (groupName == "") {
+            alert("分组名不能为空！")
+            $("#companyadd").focus();
+            return;
+        }
+        if (confirm("确定创建分组：" + groupName + "？")) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/menu/menuAdd"
+                , data: {
+                    menuName: groupName,
+                    rank: 2
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        //alert("保存成功！")
+                        location.reload();
+                    } else {
+                        alert(data.obj1);
+                    }
+
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+
+    }
+
+    //分组删除框显示
+    function groupDel() {
+        //加载分组
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/menu/getMenu"
+            , data: {
+                rank: 2
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //循环组织设备列表
+                    var grouplist = "<option value='' style='color:lightgrey;'>请选择分组</option>";
+                    if (data.obj.length > 0) {
+                        for (var i = 0; i < data.obj.length; i++) {
+                            grouplist = grouplist + "<option value='" + data.obj[i].id + "'>" + data.obj[i].name + "</option>";
+                        }
+                        $('#groupDelList').html(grouplist);
+                        $('#groupDelDialog').modal('show');
+                    } else {
+                        alert("目前没有分组！")
+                    }
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /*关闭分删除框*/
+    function closegroupdel() {
+        $('#groupDelDialog').modal('hide');
+    }
+
+    //删除分组
+    function delgroup() {
+        var menuId = $("#groupDelList").val();
+        if (menuId == "") {
+            alert("请选择分组！")
+            $("#groupDelList").focus();
+            return;
+        }
+        if (confirm("确定删除该分组？")) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/menu/menuDel"
+                , data: {
+                    menuId: menuId
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        alert("删除成功！")
+                        location.reload();
+                    } else {
+                        alert(data.obj1);
+                    }
+
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+
+    }
+
+    /** ----- 普通用户分组操作 end ----- **/
+
+
+    /** ----- 设备批量分组 start ----- **/
+    //根据用户权限打开设备分组
+    function deviceToGroup() {
+        if (idstr.length > 0) {
+            if ($("#currentUserId").val() == "888") {
+                deviceToComOpen();
+            } else {
+                deviceToGroupOpen();
+            }
+        } else {
+            alert("请勾选设备！");
+            return;
+        }
+    }
+
+    //打开设备批量分组到公司
+    function deviceToComOpen() {
+        //加载公司
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/menu/getMenu"
+            , data: {
+                rank: 1
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //循环组织设备列表
+                    var companylist = "<option value='' style='color:lightgrey;'>请选择公司</option>";
+                    if (data.obj.length > 0) {
+                        for (var i = 0; i < data.obj.length; i++) {
+                            companylist = companylist + "<option value='" + data.obj[i].id + "'>" + data.obj[i].name + "</option>";
+                        }
+                        $('#deviceToComList').html(companylist);
+                        $('#deviceToComDialog').modal('show');
+                    } else {
+                        alert("目前还没有公司，请先到“用户管理”页面添加公司！")
+                    }
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //关闭设备批量分组到公司
+    function deviceToComClose() {
+        $('#deviceToComDialog').modal('hide');
+    }
+
+    //保存设备批量分组到公司
+    function deviceToComSave() {
+        var menuId = $("#deviceToComList").val();
+        if (menuId == "") {
+            alert("请选择公司！");
+            $("#deviceToComList").focus();
+            return;
+        }
+        groupDeviceTodata(menuId);
+    }
+
+
+    //打开设备批量分组到分组
+    function deviceToGroupOpen() {
+        //加载公司
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/menu/getMenu"
+            , data: {
+                rank: 2
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //循环组织设备列表
+                    var grouplist = "<option value='' style='color:lightgrey;'>请选择分组</option>";
+                    if (data.obj.length > 0) {
+                        for (var i = 0; i < data.obj.length; i++) {
+                            grouplist = grouplist + "<option value='" + data.obj[i].id + "'>" + data.obj[i].name + "</option>";
+                        }
+                        $('#deviceToGroupList').html(grouplist);
+                        $('#deviceToGroupDialog').modal('show');
+                    } else {
+                        alert("目前没有分组，请先添加分组！")
+                    }
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //关闭设备批量分组到分组
+    function deviceToGroupClose() {
+        $('#deviceToGroupDialog').modal('hide');
+    }
+
+    //保存设备批量分组到分组
+    function deviceToGroupSave() {
+        var menuId = $("#deviceToGroupList").val();
+        if (menuId == "") {
+            alert("请选择分组！");
+            $("#deviceToGroupList").focus();
+            return;
+        }
+        groupDeviceTodata(menuId);
+    }
+
+
+    //发送到后台保存
+    function groupDeviceTodata(menuId) {
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/device/deviceToGroup"
+            , data: {
+                idstr: "{" + getidmap() + "}",
+                menuId: menuId
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    alert("操作成功！");
+                    location.reload();
+                } else {
+                    alert(data.obj1);
+                }
+
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /** -----  设备批量分组 end  ----- **/
+
+
+    /** ------ 设备详情 start ------ **/
+    /*查看设备详情*/
+    var currentid = 0;
+
+    function devicedetail(id) {
+        currentid = id;
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/device/devicedetail"
+            , data: {id: id}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //左列----------------------------------------
+                    $('#devicetype').val(data.obj2.terminfo);
+                    $("#snumber").val(data.obj2.termsn);
+                    $('#deviceid').val(data.obj2.deviceid);
+                    $('#ctratetime').val(data.obj3.createtime);
+                    $('#moditytime').val(data.obj3.moditytime);
+                    if (data.obj2.status == "1") {
+                        $('#status').val("在线");
+                    } else {
+                        $('#status').val("离线");
+                    }
+
+                    $('#company').val(data.obj2.companyid);
+                    $('#groups').val(data.obj2.projectid);
+                    $('#contact').val(data.obj2.contact);
+                    $('#telno').val(data.obj2.telno);
+                    $('#link').val(data.obj2.link);
+                    $('#deviceremark').val(data.obj2.remark);
+
+                    //右侧分组信息
+                    var companylist = "<option value='' style='color:lightgrey;'>请选择公司</option>";
+                    for (var i = 0; i < data.companys.length; i++) {
+                        if (data.obj2.companyid == data.companys[i].id) {
+                            companylist = companylist + "<option value='" + data.companys[i].id + "' selected>" + data.companys[i].name + "</option>";
+                        } else {
+                            companylist = companylist + "<option value='" + data.companys[i].id + "'>" + data.companys[i].name + "</option>";
+                        }
+                    }
+                    $('#company').html(companylist);
+
+                    var grouplist = "<option value='' style='color:lightgrey;'>请选择分组</option>";
+                    for (var i = 0; i < data.groups.length; i++) {
+                        if (data.obj2.projectid == data.groups[i].id) {
+                            grouplist = grouplist + "<option value='" + data.groups[i].id + "' selected>" + data.groups[i].name + "</option>";
+                        } else {
+                            grouplist = grouplist + "<option value='" + data.groups[i].id + "'>" + data.groups[i].name + "</option>";
+                        }
+                    }
+                    $('#groups').html(grouplist);
+
+                    //设置数据后展示
+                    $('#detailDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /*保存详情*/
+    function saveinfo() {
+        if (confirm("确定修改？")) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/device/updatedevice"
+                , data: {
+                    id: currentid
+                    , companyid: $('#company').val()
+                    , projectid: $('#groups').val()
+                    , contact: $('#contact').val()
+                    , telno: $('#telno').val()
+                    , address: $('#address').val()
+                    , remark: $('#deviceremark').val()
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        location.reload();
+                    } else {
+                        alert(data.obj1);
+                    }
+
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+    }
+
+    /*关闭详情*/
+    function closeinfo() {
+        $('#detailDialog').modal('hide');
+        currentid = 0;
+    }
+
+    /** ------ 设备详情 end ------ **/
+
+
+    /** ------ 设备发现 start------- **/
+        //开启扫描
+    var port = 2404;
+    var scanflag = false;
+
+    function discverDevice() {
+        //直接打开弹窗，再打开扫描空间
+        $('#discoverform').hide();
+        $('#loading').show();
+        $('#DiscoverListDialog').modal('show');
+        scanflag = true;
+
+        //开始扫描，这里需要执行两次，第一次打开扫描器，第二次获取扫描数据
+        scanOpen();
+        /*setTimeout(function () {
+            scanOpen();
+        }, 6000);*/
+
+        //扫描延时
+        setTimeout(function () {
+            $('#loading').hide();
+            $('#discoverform').show();
+            scanflag = false;
+        }, 6000);
+    }
+
+    //打开后台设备扫描器
+    function scanOpen() {
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/rsnetdevice/discoverDevice"
+            , data: {port: port}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: true
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    console.log("设备扫描已启动！");
+
+                    //加载设备表数据
+                    $('#discovertable').bootstrapTable('removeAll');
+                    for (var i = 0; i < data.deviceList.length; i++) {
+                        var id = data.deviceList[i].deviceid;
+                        var remark = data.deviceList[i].remark;
+                        var terminfo = data.deviceList[i].terminfo;
+                        var deviceid = data.deviceList[i].deviceid;
+
+                        $('#discovertable').bootstrapTable('append', {
+                            'id': id,
+                            'remark': remark,
+                            'terminfo': terminfo,
+                            'deviceid': deviceid,
+                        });
+                    }
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //关闭设备扫描
+    function closeDiscover() {
+        $('#DiscoverListDialog').modal('hide');
+        /*if (scanflag) {
+        } else {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/rsnetdevice/closeDiscover"
+                , data: {port: port}
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        $('#DiscoverListDialog').modal('hide');
+                        console.log("设备扫描已关闭！");
+                        location.reload();
+                    } else {
+                        alert(data.obj1);
+                    }
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }*/
+    }
+
+    //添加发现设备到本地
+    function addDevice() {
+        if (confirm("是否添加勾选设备到平台？")) {
+            //获取勾选设备
+            var deviceids = getSelectidstr($('#discovertable'));
+
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/rsnetdevice/addDevice"
+                , data: {deviceids: deviceids}
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        alert("添加成功！");
+                        closeDiscover();
+                    } else {
+                        alert(data.obj1);
+                    }
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+    }
+
+    //刷新实时数据
+    function dataUpdate() {
+        //先打开扫描器，再刷新数据
+        //scanOpen();
+
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/rsnetdevice/dataUpdate"
+            , data: {deviceid: $('#deviceid').val()}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: true
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    $('#link').val(data.link);
+                } else {
+                    console.log(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /** ------ 设备发现 end------- **/
+</script>
+</body>
+</html>

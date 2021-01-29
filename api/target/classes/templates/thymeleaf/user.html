@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="zh-cn" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="commons::common_header"><!-- 引入头文件 -->
+</head>
+<body>
+<link rel="stylesheet" th:href="@{/static/css/zTreeStyle.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui.min.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui-1.10.4.custom.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/bootstrap-table.css}"/>
+<nav th:replace="commons::common_nav"></nav><!-- 引入导航栏 -->
+<div th:replace="commons::common_pwdmodal"></div><!-- 引入密码修改框 -->
+<!-- 设备管理模块整理视图 -->
+<div class="container" style="width: 1500px; margin-top: 50px">
+    <div class="panel panel-default" style=" width: 98%; margin-left: 1%;">
+        <!-- 表头功能按键 -->
+        <div class="panel-heading">
+            <div class="pull-right">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="userAdd()" id="userAdd">
+                        新增用户
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="userToCom()" id="userToCom">
+                        用户分组
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" onclick="location.reload()">
+                        刷新
+                    </button>
+                </div>
+            </div>
+            <h5> 用户管理 </h5>
+        </div>
+
+        <!-- 表格主体 -->
+        <form class="form-inline" role="form" id="formaboutuser" name="formaboutuser" action="/DMIL/user/list"
+              method="post">
+            <div class="panel-body">
+                <!-- 主体左侧树状目录 -->
+                <div class="panel panel-default col-sm-2"
+                     style="overflow-y:auto; overflow-x:auto; width:280px; height: 650px;">
+                    <div style="width:260px; padding-top: 10px">
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="companyid" type="hidden" th:value="${companyid}"><!-- 焦点所在父节点 -->
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="msg" type="hidden" th:value="${msg}"><!-- 下载消息 -->
+                    </div>
+                    <ul id="companyTree" class="ztree"></ul>
+
+                    <!-- 添加公司 -->
+                    <div class="panel panel-footer"
+                         style="text-align:center; width:90%; position:absolute; bottom:0px;padding-bottom:5px; margin-bottom:0">
+                        <button type="button" style="width: 40%; " class="btn btn-primary" onclick="companyAdd()">
+                            添加公司
+                        </button>&nbsp;&nbsp;
+                        <button type="button" style="width: 40%; " class="btn btn-danger" onclick="companyDel()">
+                            删除公司
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 主体右侧软件信息表格 -->
+                <div class="panel panel-default col-sm-10" style="left:10px; width:1100px; height:650px;">
+                    <div class="panel-heading " style="padding: 0px;">
+                        <div style="display: inline-block;width: 100%; padding-top: 10px">
+                            <div class=" col-sm-12">
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="username" name="username" th:value="${username}"
+                                           placeholder="请输入用户名" maxlength="50"
+                                           style="width: 150px;padding-bottom: 0px;padding-top: 0px;height: 34px;">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="tel" id="phone" name="phone" th:value="${phone}"
+                                           placeholder="请输入手机号" maxlength="11"
+                                           style="width: 150px;padding-bottom: 0px;padding-top: 0px;height: 34px;"
+                                           onkeyup="this.value=this.value.replace(/[^\uFF00-\uFFFF\u4e00-\u9fa5\w\@\&\-]/g,'')">
+                                </div>
+                                <div class="btn-group" role="group"><!--suppress ALL-->
+                                    <input type="hidden" id="onlineStatus" th:value="${status}">
+                                    <button id="onlineCss" type="button" class="btn dropdown-toggle"
+                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span id="statusflag">全部</span>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="javascript:queryByStatus('')">全部</a></li>
+                                        <li><a href="javascript:queryByStatus('1')">可用</a></li>
+                                        <li><a href="javascript:queryByStatus('0')">不可用</a></li>
+                                    </ul>
+                                    <script th:inline="javascript">
+                                        /* 设备状态下拉按钮预处理 */
+                                        $(document).ready(function () {
+                                            var status = [[${status}]];
+                                            if (status == 1) {
+                                                $("#statusflag").text("可用");
+                                                $("#onlineCss").addClass("btn-info");
+                                            } else if (status == 0) {
+                                                $("#statusflag").text("不可用");
+                                                $("#onlineCss").addClass("btn-danger");
+                                            } else {
+                                                $("#statusflag").text("全部");
+                                                $("#onlineCss").addClass("btn-default");
+                                            }
+                                            return;
+                                        });
+
+                                        function queryByStatus(sta) {
+                                            if (sta == '1') {
+                                                $("#onlineStatus").val(1);
+                                            } else if (sta == '0') {
+                                                $("#onlineStatus").val(0);
+                                            } else {
+                                                $("#onlineStatus").val('');
+                                            }
+                                            querylist();
+                                        }
+                                    </script>
+                                </div>
+                                <div class="btn-group">
+                                    <button id="queryBtn2" type="button" class="btn btn-primary"
+                                            onclick="querylist()">
+                                        查询
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-striped scroll-bar"
+                           style="table-layout: fixed; display:block; height: 500px; overflow: auto">
+                        <!--suppress ALL-->
+                        <thead th:if="${datalist.size() > 0}">
+                        <tr>
+                            <th><!--suppress ALL-->
+                                <input type="checkbox" id="checkRow_head" name="checkRow_" value=""
+                                       th:onclick="|checkPageSelected_(this);loadallids(this, ${datalist})|"/>
+                            </th>
+                            <th>用户名</th>
+                            <th>手机号</th>
+                            <th>真实姓名</th>
+                            <th>公司</th>
+                            <!--<th>备注</th>-->
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() > 0}">
+                        <!--suppress ALL-->
+                        <tr th:each="user : ${datalist}">
+                            <th scope="row"><!--suppress ALL-->
+                                <input type="checkbox" name="checkRow_"
+                                       th:onclick="|checkRowSelected_(this);loadcheck(this, ${user.id})|"/>
+                            </th><!--suppress ALL-->
+                            <td th:text="${user.username}" style="width: 15%;"></td><!--suppress ALL-->
+                            <td th:text="${user.phone}" style="width: 15%;"></td><!--suppress ALL-->
+                            <td th:text="${user.realname}" style="width: 15%;"></td><!--suppress ALL-->
+                            <td th:text="${user.company}" style="width: 15%;"></td><!--suppress ALL-->
+                            <!--<td th:text="${user.remark}" style="width: 15%;"></td>-->
+                            <td style="width: 10%;"><!--suppress ALL-->
+                                <label th:if="${user.status == 0}" style="color:red;">不可用</label><!--suppress ALL-->
+                                <label th:if="${user.status == 1}" style="color:deepskyblue;">可用</label>
+                            </td>
+                            <td style="width: 30%;"><!--suppress ALL-->
+                                <button type="button" class="btn-xs btn-primary" th:onclick="|openPermission(${user.id})|">
+                                    权限设置
+                                </button><!--suppress ALL-->
+                                <button type="button" class="btn-xs btn-info" th:onclick="|resetPwd(${user.id})|">
+                                    重置密码
+                                </button><!--suppress ALL-->
+                                <button th:if="${user.status == 0}" type="button" class="btn-xs btn-primary"
+                                        th:onclick="|userEnable(${user.id})|">
+                                    启用
+                                </button><!--suppress ALL-->
+                                <button th:if="${user.status == 1}" type="button" class="btn-xs btn-danger"
+                                        th:onclick="|userUnable(${user.id})|">
+                                    禁用
+                                </button><!--suppress ALL-->
+                                <button type="button" class="btn-xs btn-danger"
+                                        th:onclick="|userDelete(${user.id})|">
+                                    删除
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() == 0}">
+                        <div class="pagenodate" style="padding-top: 50px"><label style="color:red;">没有符合您要求的记录</label>
+                        </div>
+                        </tbody>
+                    </table>
+                    <!-- 分页组件 -->
+                    <div th:replace="commons::common_paginater"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 添加公司框 -->
+<div class="modal fade" id="companyAddDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header">
+                <h4 class="modal-title">添加公司</h4>
+            </div>
+            <form class="form-horizontal" id="addpost" name="addpost" role="form" method="post" enctype="post">
+                <div class="form-group" style="margin-right: 0px; padding-top: 10px">
+                    <label for="companyadd" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">公司名称：</label>
+                    <div class="col-md-8" style="padding-left: 0px">
+                        <input type="text" maxlength="50" class="form-control " id="companyadd" name="companyadd"
+                               placeholder="请输入公司名称">
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer" id="refoot">
+                <button id="saveAdd" name="saveAdd" type="button" class="btn btn-primary"
+                        onclick="savecompany()">保存
+                </button>
+                <button type="button" class="btn btn-default" onclick="closecompanyadd()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除公司框 -->
+<div class="modal fade" id="companyDelDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header">
+                <h4 class="modal-title">删除公司</h4>
+            </div>
+            <form class="form-horizontal" id="delpost" name="delpost" role="form" method="post" enctype="post">
+                <div class="form-group" style="margin-right: 0px; padding-top: 10px">
+                    <label for="companyDelList" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">选择公司：</label>
+                    <div class="btn-group col-md-6" style="padding-left: 0px;">
+                        <select id="companyDelList" name="companyDelList" class="form-control">
+                        </select>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer" id="delfoot">
+                <button id="savedel" name="savedel" type="button" class="btn btn-danger"
+                        onclick="delcompany()">删除
+                </button>
+                <button type="button" class="btn btn-default" onclick="closecompanydel()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加用户框 -->
+<div class="modal fade" id="detailDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:550px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="userModal">新增用户</h4>
+            </div>
+            <form class="form-horizontal" id="userinfo" name="userinfo" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body text-nowrap">
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" style="color:red;">*</label>&nbsp;&nbsp;
+                            <label class="control-label" for="loginname">用户名：</label>
+                        </div>
+                        <div class="col-md-6" style="padding-left: 0px">
+                            <input type="text" maxlength="50" class="form-control " id="loginname" name="loginname"
+                                   placeholder="请填写用户名" value="">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" style="color:red;">*</label>&nbsp;&nbsp;
+                            <label class="control-label" for="loginphone">手机号：</label>
+                        </div>
+                        <div class="col-md-6" style="padding-left: 0px">
+                            <input type="tel" maxlength="11" class="form-control " id="loginphone" name="loginphone"
+                                   placeholder="请填写手机号" value="">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" style="color:red;">*</label>&nbsp;&nbsp;
+                            <label class="control-label" for="loginPwd">登录密码：</label>
+                        </div>
+                        <div class="col-sm-6" style="padding-left: 0px">
+                            <input type="password" maxlength="50" class="form-control" id="loginPwd" name="loginPwd"
+                                   placeholder="登录密码" value="">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" style="color:red;">*</label>&nbsp;&nbsp;
+                            <label class="control-label" for="loginConfirm">确认密码：</label>
+                        </div>
+                        <div class="col-sm-6" style="padding-left: 0px">
+                            <input type="password" maxlength="50" class="form-control" id="loginConfirm" name="loginConfirm"
+                                   placeholder="确认密码" value="">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" for="realname">真实姓名：</label>
+                        </div>
+                        <div class="col-md-6" style="padding-left: 0px">
+                            <input type="text" maxlength="50" class="form-control " id="realname" name="realname"
+                                   placeholder="请填写真实姓名" value="">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" for="usercompany">选择公司：</label>
+                        </div>
+                        <div class="btn-group col-md-6" style="padding-left: 0px;">
+                            <select id="usercompany" name="usercompany" class="form-control">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-md-4" style="padding-right: 5%; text-align: right">
+                            <label class="control-label" for="userpermission">用户权限：</label>
+                        </div>
+                        <div class="btn-group col-md-6" style="padding-left: 0px;">
+                            <input id="userpermission" value="" hidden readonly>
+                            <button type="button" class="btn-sm btn-primary" onclick="openPermission(0)" style="width: 100px">
+                                权限设置
+                            </button>&nbsp;&nbsp;
+                            <span id="pericon1" class="glyphicon glyphicon-ok hidden" aria-hidden="true">&nbsp;已设置</span>
+                            <span id="pericon2" class="glyphicon glyphicon-remove hidden" aria-hidden="true">&nbsp;未设置</span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="saveinfo()">保存</button>
+                <button type="button" class="btn btn-default" onclick="closeinfo()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 用户分组框 -->
+<div class="modal fade" id="userToComDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header">
+                <h4 class="modal-title">选择公司</h4>
+            </div>
+            <form class="form-horizontal" id="userToComPost" name="delpost" role="form" method="post" enctype="post">
+                <div class="form-group" style="margin-right: 0px; padding-top: 10px">
+                    <label for="userToComList" class="col-md-4 control-label"
+                           style="padding-left: 0px;padding-right: 5%;">选择公司：</label>
+                    <div class="btn-group col-md-6" style="padding-left: 0px;">
+                        <select id="userToComList" name="userToComList" class="form-control">
+                        </select>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer" id="deviceToComfoot">
+                <button id="deviceToComSave" name="savedel" type="button" class="btn btn-primary"
+                        onclick="userToComSave()">保存
+                </button>
+                <button type="button" class="btn btn-default" onclick="userToComClose()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 权限设置框 -->
+<div class="modal fade" id="permissionDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:650px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="permissionModal">选择权限菜单</h4>
+            </div>
+            <form class="form-horizontal" id="permissionfoget" name="permissionfoget" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body col-md-12">
+                    <table id="permissiontable" class="table table-striped scroll-bar"
+                           style="table-layout:fixed; word-break:break-all; display:block; height: 380px; overflow:auto">
+                        <thead>
+                        <tr>
+                            <th data-checkbox="true" data-select="false"></th>
+                            <th data-field="id" class="hidden"></th>
+                            <th data-field="name">菜单名称</th>
+                            <th data-field="per">权限说明</th>
+                        </tr>
+                        </thead>
+                        <tbody id="fileAddlist">
+                        <tr>
+                            <td class="bs-checkbox "><input data-index="0" name="btSelectItem" type="checkbox"></td>
+                            <td class="hidden">1</td>
+                            <td>设备管理</td>
+                            <td>1、可查看该用户所属公司下设备信息；<br/>
+                                2、可对设备进行设备升级、信息修改、设备分组等操作；
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="bs-checkbox "><input data-index="7" name="btSelectItem" type="checkbox"></td>
+                            <td class="hidden">7</td>
+                            <td>设备控制</td>
+                            <td>1、可查看该用户所属公司下设备参数信息；<br/>
+                                2、可对设备进行在线参数设置；
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="bs-checkbox "><input data-index="2" name="btSelectItem" type="checkbox"></td>
+                            <td class="hidden">2</td>
+                            <td>软件管理</td>
+                            <td>1、可上传软件升级包（.zip文件）并查看该账号上传的软件升级包信息；<br/>
+                                2、可对其上传的软件包进行删除、下载、备注等操作；
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="bs-checkbox "><input data-index="3" name="btSelectItem" type="checkbox"></td>
+                            <td class="hidden">3</td>
+                            <td>信息发布</td>
+                            <td>1、可上传素材文件（.mp4、.png、.jpg等）并查看该账号上传的素材文件；<br/>
+                                2、可对其上传的素材文件进行删除、下载、备注等操作；<br/>
+                                3、可添加节目单并编辑该账号所属公司的节目单；<br/>
+                                4、可发布节目单到该公司所属设备上；<br/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="bs-checkbox "><input data-index="5" name="btSelectItem" type="checkbox"></td>
+                            <td class="hidden">5</td>
+                            <td>系统日志</td>
+                            <td>1、可查看设备在线升级的流程日志；<br/>
+                                2、可查看软件管理模块的的操作日志；<br/>
+                                3、可查看信息发布模块的操作日志包括文件操作和节目单发布日志；<br/>
+                                4、可查看本公司所有账号的登录日志；<br/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="savePermission()">确定</button>
+                <button type="button" class="btn btn-default" onclick="closePermission()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/static/js/common.js}"></script>
+<script th:src="@{/static/js/jquery-ui.min.js}"></script>
+<script th:src="@{/static/js/jquery.ztree.all-3.5.min.js}"></script>
+<script th:src="@{/static/js/bootstrap-table.js}"></script>
+<script th:src="@{/static/js/bootstrap-table-zh-CN.js}"></script>
+<script th:inline="javascript">
+    /** ----------初始化表格控件-------- */
+    $(document).ready(function () {
+        $("#permissiontable").bootstrapTable({
+            striped: true
+        });
+    });
+    /** -----表格左侧树状目录加载组方法 start----- **/
+    /* 设置树形目录参数 */
+    var setting = {
+        view: {
+            selectedMulti: false
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        callback: {
+            beforeClick: zTreeBeforeClick
+        }
+    };
+
+    /* 初始化查询,保留之前的选中状态 */
+    var zNodes = [[${menuTreeBeans}]];
+    var zTree;
+    $(document).ready(function () {
+        zTree = $.fn.zTree.init($("#companyTree"), setting, zNodes);
+        var treeObj = $.fn.zTree.getZTreeObj("deviceTree");
+        var companyid = $('#companyid').val();
+        var msg = $('#msg').val();
+        var node = null;
+        if (companyid != "") {
+            node = treeObj.getNodeByParam("id", companyid, null);
+        }
+        if (node != null) {
+            $("#" + node.tId + "_a").attr('class', 'curSelectedNode');
+        }
+
+        //显示回调信息
+        if (msg != "") {
+            alert(msg);
+        }
+    });
+
+    /* 点击项目树查询: treeNode.id（为节点id），treeNode.pid（父节点id），treeNode.tId（菜单名_节点自然顺序） */
+    function zTreeBeforeClick(treeId, treeNode, clickFlag) {
+        location.href = "/DMIL/user/list?companyid=" + treeNode.id + "&pageSize=" + $("#pageSize").val();
+    };
+
+    /*点击查询按钮查询树状目录*/
+    function searchDeviceByName() {
+        var companyname = $("#companyname").val();
+        var companyid = $('#companyid').val();
+        var tourl = "";
+        if (projectname != "") {
+            tourl = "/DMIL/user/list?companyname=" + encodeURI(companyname) + "&pageSize=" + $("#pageSize").val();
+        } else {
+            tourl = "/DMIL/user/list?companyid=" + companyid + "&pageSize=" + $("#pageSize").val();
+        }
+        location.href = tourl;
+    }
+    /** -----表格左侧树状目录加载组方法 end----- **/
+
+
+    /** 条件查询 */
+    function querylist() {
+        var companyname = $("#companyname").val();
+        var companyid = $('#companyid').val();
+        var msg = $("#msg").val();
+
+        var username = $("#username").val();
+        var phone = $("#phone").val();
+        var onlineStatus = $("#onlineStatus").val();
+
+        location.href = "/DMIL/user/list?companyid=" + companyid + "&msg=" + encodeURI(msg) + "&companyname=" + encodeURI(companyname)
+            + "&username=" + encodeURI(username) + "&phone=" + encodeURI(phone) + "&status=" + onlineStatus
+            + "&page=1" + "&pageSize=" + $("#pageSize").val();
+    }
+
+
+    /** ----- 公司添加删除 start ----- **/
+    //公司添加框显示
+    function companyAdd() {
+        $('#companyadd').val("");
+        $('#companyAddDialog').modal('show');
+    }
+
+    /*关闭公司添加框*/
+    function closecompanyadd() {
+        $('#companyAddDialog').modal('hide');
+    }
+
+    //保存公司
+    function savecompany() {
+        var companyName = $("#companyadd").val();
+        if (companyName == "") {
+            alert("公司名不能为空！")
+            $("#companyadd").focus();
+            return;
+        }
+        if (confirm("确定创建公司：" + companyName + "？")) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/menu/menuAdd"
+                , data: {
+                    menuName: companyName,
+                    rank: 1
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        //alert("保存成功！");
+                        location.reload();
+                    } else {
+                        alert(data.obj1);
+                    }
+
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+
+    }
+
+    //公司删除框显示
+    function companyDel() {
+        //加载公司
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/menu/getMenu"
+            , data: {
+                rank: 1
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //循环组织设备列表
+                    var companylist = "<option value='' style='color:lightgrey;'>请选择公司</option>";
+                    if (data.obj.length > 0) {
+                        for (var i = 0; i < data.obj.length; i++) {
+                            companylist = companylist + "<option value='" + data.obj[i].id + "'>" + data.obj[i].name + "</option>";
+                        }
+                        $('#companyDelList').html(companylist);
+                    }
+                    $('#companyDelDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /*关闭公司删除框*/
+    function closecompanydel() {
+        $('#companyDelDialog').modal('hide');
+    }
+
+    //删除公司
+    function delcompany() {
+        var menuId = $("#companyDelList").val();
+        if (menuId == "") {
+            alert("请选择公司！")
+            $("#companyDelList").focus();
+            return;
+        }
+        if (confirm("确定删除该公司？")) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/menu/menuDel"
+                , data: {
+                    menuId: menuId
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        alert("删除成功！")
+                        location.reload();
+                    } else {
+                        alert(data.obj1);
+                    }
+
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+
+    }
+    /** ----- 公司添加删除 end ----- **/
+
+
+    /** ----- 用户批量分组 start ----- **/
+    //打开用户批量分组到公司
+    function userToCom() {
+        if (idstr.length > 0) {
+            //加载公司
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/menu/getMenu"
+                , data: {
+                    rank: 1
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        //循环组织设备列表
+                        var companylist = "<option value='' style='color:lightgrey;'>请选择公司</option>";
+                        if (data.obj.length > 0) {
+                            for (var i = 0; i < data.obj.length; i++) {
+                                companylist = companylist + "<option value='" + data.obj[i].id + "'>" + data.obj[i].name + "</option>";
+                            }
+                            $('#userToComList').html(companylist);
+                            $('#userToComDialog').modal('show');
+                        } else {
+                            alert("目前没有公司，请先添加公司！")
+                        }
+                    } else {
+                        alert(data.obj1);
+                    }
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        } else {
+            alert("请勾选用户！");
+            return;
+        }
+    }
+
+    //关闭用户批量分组到公司
+    function userToComClose() {
+        $('#userToComDialog').modal('hide');
+    }
+
+    //保存用户批量分组到公司
+    function userToComSave() {
+        var menuId = $("#userToComList").val();
+        if (menuId == "") {
+            alert("请选择公司！");
+            $("#userToComList").focus();
+            return;
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/user/userToCom"
+            , data: {
+                idstr: "{" + getidmap() + "}",
+                menuId: menuId
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    alert("操作成功！")
+                    location.reload();
+                } else {
+                    alert(data.obj1);
+                }
+
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+    /** ----- 用户批量分组 end ----- **/
+
+
+    /** ----- 新增用户 start ----- **/
+    /*打开新增用户弹窗*/
+    function userAdd() {
+        //加载公司
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/menu/getMenu"
+            , data: {
+                rank: 1
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //循环组织设备列表
+                    var companylist = "<option value='' style='color:lightgrey;'>请选择公司</option>";
+                    if (data.obj.length > 0) {
+                        for (var i = 0; i < data.obj.length; i++) {
+                            companylist = companylist + "<option value='" + data.obj[i].id + "'>" + data.obj[i].name + "</option>";
+                        }
+                        $('#usercompany').html(companylist);
+                        $('#detailDialog').modal('show');
+                    } else {
+                        alert("目前还没有公司，请先添加公司！")
+                    }
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /*关闭新增用户弹窗*/
+    function closeinfo() {
+        $('#detailDialog').modal('hide');
+
+        //清除缓存
+        $('#loginname').val("");
+        $('#loginphone').val("");
+        $('#realname').val("");
+        $('#newPwd').val("");
+        $('#newPwdConfirm').val("");
+        $('#usercompany').val("");
+        $('#userpermission').val("");
+        $('#pericon1').addClass("hidden");
+        $('#pericon2').addClass("hidden");
+    }
+
+    /*保存详情*/
+    function saveinfo() {
+        var loginname = $('#loginname').val();
+        var loginphone = $('#loginphone').val();
+        var realname = $('#realname').val();
+        var newPwd = $('#loginPwd').val();
+        var newPwdConfirm = $('#loginConfirm').val();
+        var usercompany = $('#usercompany').val();
+        var userpermission = $('#userpermission').val();
+        if (loginname == "") {
+            alert("请填写用户名！");
+            $('#loginname').focus();
+            return;
+        }
+        if (loginphone == "") {
+            alert("请填写手机号！");
+            $('#loginphone').focus();
+            return;
+        }
+        if (!isNum(loginphone)) {
+            alert("手机号只能是数字！");
+            $('#loginphone').focus();
+            return;
+        }
+        if (newPwd == "") {
+            alert("请填写登录密码！");
+            $('#newPwd').focus();
+            return;
+        }
+        if (newPwdConfirm == "") {
+            alert("请填写确认密码！");
+            $('#newPwdConfirm').focus();
+            return;
+        }
+        if (newPwd != newPwdConfirm) {
+            alert("确认密码与登录密码不一致！");
+            $('#newPwdConfirm').focus();
+            return;
+        }
+        if (usercompany == "") {
+            alert("请选择公司！");
+            $('#usercompany').focus();
+            return;
+        }
+        if (userpermission == "") {
+            if (!confirm("您还没有设置用户权限，确定创建用户？")) {
+                return;
+            }
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/user/adduser"
+            , data: {
+                username: loginname
+                , phone: loginphone
+                , newPwd: newPwd
+                , newPwdConfirm: newPwdConfirm
+                , realname: realname
+                , company: usercompany
+                , userpermission:userpermission
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    location.reload();
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+    /** ----- 新增用户 end ----- **/
+
+
+    /** ----- 用户操作 start ----- **/
+    //重置密码
+    function resetPwd(id) {
+        editUserinfo(id, "1", "", "");
+    }
+
+    //启用用户
+    function userEnable(id) {
+        editUserinfo(id, "", "1", "");
+    }
+
+    //禁用用户
+    function userUnable(id) {
+        editUserinfo(id, "", "0", "");
+    }
+
+    //删除用户
+    function userDelete(id) {
+        editUserinfo(id, "", "", "1");
+    }
+
+    /*修改信息*/
+    function editUserinfo(id, pwdReset, status, delflag) {
+        var msg = "";
+        if (pwdReset != "") {
+            msg = "确定重置密码？";
+        }
+        if (status != "") {
+            if (status == "0") {
+                msg = "确定禁用该用户？";
+            } else if (status == "1") {
+                msg = "确定启用该用户？";
+            }
+        }
+        if (delflag != "") {
+            msg = "确定删除该用户？";
+        }
+        if (msg == "") {
+            return;
+        }
+
+        if (confirm(msg)) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/user/edituser"
+                , data: {
+                    id: id
+                    ,pwdReset: pwdReset
+                    ,status: status
+                    ,delflag: delflag
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    alert(data.obj1);
+                    location.reload();
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+    }
+    /** ----- 用户操作 end ----- **/
+
+
+    /** ----- 权限设置 start ----- **/
+    //打开权限列表
+    var theid = 0;
+    function openPermission(id) {
+        if (id != 0) {
+            //获取该用户权限
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/user/getPermission"
+                , data: {
+                    id: id
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        theid = id;
+                        checkByIndexs($('#permissiontable'), data.permission);
+                        $('#permissionDialog').modal('show');
+                    } else {
+                        alert(data.obj1);
+                    }
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        } else {
+            checkByIndexs($('#permissiontable'), $('#userpermission').val());
+            $('#permissionDialog').modal('show');
+        }
+    }
+
+    //保存权限
+    function savePermission() {
+        var permission = getSelectidstr($('#permissiontable'));
+        if (theid != 0) {
+            if (confirm("确定保存权限？")) {
+                $.ajax({
+                    type: "POST"
+                    , url: "/DMIL/user/savePermission"
+                    , data: {
+                        id: theid,
+                        permission: permission
+                    }
+                    , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                    , dataType: "json"
+                    , cache: false
+                    , success: function (data) {
+                        if (data.obj1 == 'success') {
+                            //alert("权限设置成功！");
+                            location.reload();
+                        } else {
+                            alert(data.obj1);
+                        }
+                    }
+                    , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        //alert(XMLHttpRequest.status + textStatus);
+                    }
+                });
+            }
+        } else {
+            $('#userpermission').val(permission);
+            if ($('#userpermission').val() == "") {
+                $('#pericon1').addClass("hidden");
+                $('#pericon2').removeClass("hidden");
+            } else {
+                $('#pericon1').removeClass("hidden");
+                $('#pericon2').addClass("hidden");
+            }
+            closePermission();
+        }
+    }
+
+    //关闭权限列表
+    function closePermission() {
+        $('#permissionDialog').modal('hide');
+
+        //清除缓存
+        theid = 0;
+    }
+    /** ----- 权限设置 end ----- **/
+</script>
+</body>
+</html>

@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="zh-cn" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="commons::common_header"><!-- 引入头文件 -->
+</head>
+<body>
+<link rel="stylesheet" th:href="@{/static/css/zTreeStyle.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui.min.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui-1.10.4.custom.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/bootstrap-datetimepicker.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/bootstrap-table.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/bootstrap-table-reorder-rows.css}"/>
+<nav th:replace="commons::common_nav"></nav><!-- 引入导航栏 -->
+<div th:replace="commons::common_pwdmodal"></div><!-- 引入密码修改框 -->
+<!-- 文件管理模块整理视图 -->
+<div class="container" style="width: 1500px; margin-top: 50px">
+    <div class="panel panel-default" style=" width: 98%; margin-left: 1%;">
+        <!-- 表头功能按键 -->
+        <div class="panel-heading">
+            <div class="pull-right">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="makeProgram()" id="makeProgram">
+                        制作节目单
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="datafordevice()" id="datafordevice">
+                        数据统计
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" onclick="location.reload()">
+                        刷新
+                    </button>
+                </div>
+            </div>
+            <h5> 信息发布 </h5>
+        </div>
+
+        <!-- 表格主体 -->
+        <form class="form-inline" role="form" id="formaboutdevice" name="formaboutdevice" action="/DMIL/file/list"
+              method="post">
+            <div class="panel-body">
+                <!-- 主体左侧树状目录 -->
+                <div class="panel panel-default col-sm-2"
+                     style="overflow-y:auto; overflow-x:auto; width:280px; height: 650px;">
+                    <div style="width:260px; padding-top: 10px">
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="programid" type="hidden" th:value="${programid}"><!-- 焦点所在子节点 -->
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="companyid" type="hidden" th:value="${companyid}"><!-- 焦点所在父节点 -->
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="msg" type="hidden" th:value="${msg}"><!-- 消息 -->
+
+                        <!-- 节目单、设备互查框 -->
+                        <div class="btn-group"><!--suppress ALL-->
+                            <select id="querytype" name="querytype" class="form-control" th:value="${querytype}"
+                                    style="width: 150px"><!--suppress ALL-->
+                                <option value="1" th:selected="${querytype == 1?'selected':'false'}">节目单名称</option>
+                                <!--suppress ALL-->
+                                <option value="2" th:selected="${querytype == 2?'selected':'false'}">终端序列号</option>
+                            </select>
+                        </div>
+                        <div class="btn-group">
+                            <button id="queryBtn5" type="button" class="btn btn-primary"
+                                    onclick="querytree()">
+                                查询
+                            </button>
+                        </div>
+                        <div class="btn-group" style="padding-top: 5px"><!--suppress ALL-->
+                            <input size="20" type="text" id="queryinfo" name="queryinfo" th:value="${queryinfo}"
+                                   placeholder="请输入查询内容" maxlength="100"
+                                   style="width: 200px;padding-bottom: 0px;padding-top: 0px;height: 34px;">
+                        </div>
+
+                    </div>
+                    <ul id="programTree" class="ztree" style="display: block"></ul>
+                </div>
+
+                <!-- 主体右侧软件信息表格 -->
+                <div class="panel panel-default col-sm-10" style="left:10px; width:1100px; height:650px;">
+                    <div class="panel-heading " style="padding: 0px;">
+                        <div style="display: inline-block;width: 100%; padding-top: 10px">
+                            <div class=" col-sm-12">
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="remark" name="remark" th:value="${remark}"
+                                           placeholder="请输入备注名称" maxlength="100"
+                                           style="width: 150px;padding-bottom: 0px;padding-top: 0px;height: 34px;">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <select id="choosetype" name="choosetype" class="form-control" th:value="${choosetype}">
+                                        <option value="" style="color:lightgrey;">文件类型</option><!--suppress ALL-->
+                                        <option value="1" th:selected="${choosetype == 1?'selected':'false'}" style="color:deepskyblue;">图片</option><!--suppress ALL-->
+                                        <option value="2" th:selected="${choosetype == 2?'selected':'false'}" style="color:limegreen;">视频</option>
+                                    </select>
+                                </div>
+                                <div class="btn-group" style="margin-top: 5px;margin-bottom: 5px;">
+                                    <div class="input-group date form_datetime"><!--suppress ALL-->
+                                        <input size="20" type="text" id="startDate_createTime"
+                                               name="startDate_createTime" th:value="${start}" class="form-control"
+                                               readonly placeholder="请选择上传起始时间">
+                                        <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>
+                                <div class="btn-group" style="margin-top: 5px;margin-bottom: 5px;">
+                                    <div class="input-group date form_datetime"><!--suppress ALL-->
+                                        <input size="20" type="text" id="endDate_createTime" name="endDate_createTime"
+                                               th:value="${end}" class="form-control" readonly placeholder="请选择上传结束时间">
+                                        <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>&nbsp;&nbsp;
+                                <div class="btn-group">
+                                    <button id="queryBtn2" type="button" class="btn btn-primary"
+                                            onclick="querylist()">
+                                        查询
+                                    </button>
+                                </div>
+                                <div class="pull-right">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-primary" onclick="uploadfile()">
+                                            上传文件
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-striped scroll-bar"
+                           style="table-layout: fixed; display:block; height: 500px; overflow: auto">
+                        <!--suppress ALL-->
+                        <thead th:if="${datalist.size() > 0}">
+                        <tr>
+                            <th><!--suppress ALL-->
+                                <input type="checkbox" id="checkRow_head" name="checkRow_" value=""
+                                       th:onclick="|checkPageSelected_(this);loadallids(this, ${datalist})|"/>
+                            </th>
+                            <th>文件预览</th>
+                            <th>备注名称</th>
+                            <th>文件类型</th>
+                            <th>上传时间</th>
+                            <th>总播放次数</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() > 0}">
+                        <!--suppress ALL-->
+                        <tr th:each="file : ${datalist}">
+                            <th scope="row"><!--suppress ALL-->
+                                <input type="checkbox" name="checkRow_"
+                                       th:onclick="|checkRowSelected_(this);loadcheck(this, ${file.id})|"/>
+                            </th><!--suppress ALL-->
+                            <td style="width: 15%;" th:onclick="|getfile(${file.id})|"><!--suppress ALL-->
+                                <img th:if="${file.filetype == 1}" th:src="|/DMIL/file/downFile?id=${file.id}|"
+                                     style="width: 100px; height: 60px;"/><!--suppress ALL-->
+                                <img th:if="${file.filetype == 2}" th:src="|/DMIL/file/downShotFile?id=${file.id}|"
+                                     style="width: 100px; height: 60px;"/>
+                            </td><!--suppress ALL-->
+                            <td th:text="${file.remark}" style="width: 15%;"></td><!--suppress ALL-->
+                            <td style="width: 15%;"><!--suppress ALL-->
+                                <label th:if="${file.filetype == 0}" style="color:red;">未知</label><!--suppress ALL-->
+                                <label th:if="${file.filetype == 1}" style="color:deepskyblue;">图片</label>
+                                <!--suppress ALL-->
+                                <label th:if="${file.filetype == 2}" style="color:limegreen;">视频</label>
+                            </td><!--suppress ALL-->
+                            <td th:text="${#dates.format(file.uploadtime,'yyyy-MM-dd HH:mm:ss')}"
+                                style="width: 20%;"></td><!--suppress ALL-->
+                            <td style="width: 10%;"><!--suppress ALL-->
+                                <a href="javascript:void(0);" th:onclick="|opendata(${file.id})|" th:text="${file.downstatus}"></a>
+                            </td><!--suppress ALL-->
+                            <td style="width: 25%;"><!--suppress ALL-->
+                                <button type="button" class="btn-xs btn-primary" th:onclick="|downfile(${file.id})|">
+                                    下载
+                                </button><!--suppress ALL-->&nbsp;
+                                <button type="button" class="btn-xs btn-danger" th:onclick="|deletefile(${file.id})|">
+                                    删除
+                                </button><!--suppress ALL-->&nbsp;
+                                <button type="button" class="btn-xs btn-info"
+                                        th:onclick="|remarkfile(${file.id},'${file.remark}')|">
+                                    备注
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() == 0}">
+                        <div class="pagenodate" style="padding-top: 50px"><label style="color:red;">没有符合您要求的记录</label>
+                        </div>
+                        </tbody>
+                    </table>
+                    <!-- 分页组件 -->
+                    <div th:replace="commons::common_paginater"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 文件上传 -->
+<div class="modal fade" id="uploadDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 620px;">
+            <div class="modal-header">
+                <h4 class="modal-title">文件上传</h4>
+            </div>
+            <div class="modal-body col-sm-12">
+                <form class="form-horizontal" id="softwareFormAdd" name="softwareFormAdd" role="form" method="post"
+                      enctype="multipart/form-data">
+                    <div class="form-group" style="margin-right: 0px;">
+                        <div class="col-sm-4 text-nowrap">
+                            <div class="row">
+                                <span class="col-sm-4 control-label"
+                                      style="color:red;">*</span>
+                                <span class="col-sm-6 control-label"
+                                      style="padding-left: 0px;padding-right: 10%;">选择文件：</span>
+                            </div>
+                            <div class="row">
+                                <span class="col-sm-11 control-label"
+                                      style="color:red;">（大小限制：200MB）</span>
+                            </div>
+                        </div>
+                        <div class="col-sm-8" style="padding-left: 0px">
+                            <input type="file" name="file" id="zipFile" class="btn btn-info"
+                                   data-show-upload="false" data-show-remove="false" data-show-preview="false"
+                                   data-allowed-file-extensions='["zip"]'>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <span for="programname" class="col-md-4 control-label"
+                              style="padding-left: 0px; padding-right: 9%;">备注名称：</span>
+                        <div class="col-md-8" style="padding-left: 0px">
+                            <input type="text" maxlength="20" class="form-control " id="fileupremark"
+                                   name="fileupremark" style="width: 300px">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-right: 0px;">
+                        <span class="col-sm-11 control-label" style="padding-left: 0px;color:red;">
+                            * 注：目前支持的文件类型有限，其他格式可能存在不能使用的风险
+                            <br/>（图片格式：jpg,jpeg,png,bmp；视频格式：mp4,avi,mov）
+                        </span>
+                    </div>
+                </form>
+            </div>
+
+            <!--  进度条显示效果 -->
+            <div class="demo col-sm-12">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-12" style="width: 580px; text-align: center;">
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-info progress-bar-striped active"
+                                     id="mt-progress-length" style="width: 0%;">
+                                    <div class="progress-value" id="mt-progress-value">0%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="spanIdForSearch" style="font-size: 18px" class="pull-left" hidden="hidden">上传中...</span>
+                <button id="fileSave" name="fileSave" type="button" class="btn btn-primary" onclick="fileSave()">
+                    上传
+                </button>
+                <button type="button" class="btn btn-default" onclick="uploadcancel()">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 备注框 -->
+<div class="modal fade" id="RemarkDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content" style="width: 420px;">
+            <div class="modal-header">
+                <h4 class="modal-title">备注名称</h4>
+            </div>
+            <form class="form-horizontal" id="repost" name="repost" role="form" method="post" enctype="post">
+                <div class="form-group" style="margin-right: 0px; padding-top: 10px">
+                    <label for="remark" class="col-md-4 control-label"
+                           style="padding-left: 0px;">修改备注名称:</label>
+                    <div class="col-md-8" style="padding-left: 0px">
+                        <input type="text" class="form-control " id="doremark" name="doremark">
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer" id="refoot">
+                <button id="savere" name="savere" type="button" class="btn btn-primary"
+                        onclick="savere()">保存
+                </button>
+                <button type="button" class="btn btn-default" onclick="closere()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 节目单详情 -->
+<div class="modal fade" id="programDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:1050px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">节目单详情</h4>
+                <div class="text-center">
+                    <div id="pubtodevice" class="btn-group" style="padding-left: 0px;">
+                        <button type="button" class="btn btn-info" onclick="pubprogram()" style="width: 120px">
+                            发布节目单
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <form class="form-horizontal" id="programfoget" name="programfoget" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body col-md-12">
+                    <!-- 第一列 -->
+                    <div class="col-md-6">
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="programname" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">节目单名称：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="programname" name="programname">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="programtype" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">节目单类型：</label>
+                            <div class="btn-group col-md-8" style="padding-left: 0px;">
+                                <select id="programtype" name="programtype" class="form-control" readonly>
+                                    <option value="1">长期</option>
+                                    <!--<option value="0">临时（仅当天有效）</option>-->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="filmodel" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">适配类型：</label>
+                            <div class="btn-group col-md-8" style="padding-left: 0px;">
+                                <select id="filmodel" name="filmodel" class="form-control" readonly>
+                                    <option value="1">横屏</option>
+                                    <!--<option value="2">竖屏</option>-->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="device" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">选择设备：</label>
+                            <div id="device" class="btn-group col-md-8" style="padding-left: 0px;">
+                                <label>(已选<a id="hasgot">0</a>台)</label>&nbsp;&nbsp;
+                                <button type="button" class="btn-xs btn-info" onclick="openDevice(1)">
+                                    添加
+                                </button>&nbsp;&nbsp;
+                                <button type="button" class="btn-xs btn-danger"
+                                        onclick="delCheckRow($('#devicetable')); checkgot()">
+                                    删除
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <table id="devicetable" class="table table-striped scroll-bar"
+                                   style="table-layout:fixed; display:block; height:380px; overflow: auto">
+                                <thead>
+                                <tr>
+                                    <th data-checkbox="true" data-select="false"></th>
+                                    <th data-field="index" class="hidden"></th>
+                                    <th data-field="id" class="hidden"></th>
+                                    <th data-field="termsn">终端序列号</th>
+                                    <th data-field="termmodel">设备型号</th>
+                                    <th data-field="remark">备注</th>
+                                    <th data-field="status">状态</th>
+                                </tr>
+                                </thead>
+                                <tbody id="devicelist">
+
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!--第二列-->
+                    <div class="col-md-6">
+                        <div class="form-group" style="margin-right: 0px;">
+                            <div class="col-md-7">
+                                <label style="color:deepskyblue">文件列表：</label>
+                                <label style="color:red">（可拖拽以改变文件顺序）</label>
+                            </div>
+                            <div id="fileop" class="btn-group col-md-5">
+                                <button type="button" class="btn-sm btn-info" onclick="openFile(1)">
+                                    添加素材
+                                </button>&nbsp;&nbsp;&nbsp;&nbsp;
+                                <button type="button" class="btn-sm btn-danger" onclick="delCheckRow($('#filetable'))">
+                                    删除素材
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <!-- table-layout:fixed表示固定宽度；word-break:break-all表示超出宽度换行 -->
+                            <table id="filetable" class="table table-striped scroll-bar"
+                                   style="table-layout:fixed; word-break:break-all; display:block; height: 520px; overflow:auto">
+                                <thead>
+                                <tr>
+                                    <th data-checkbox="true" data-select="false"></th>
+                                    <th data-field="index" class="hidden"></th>
+                                    <th data-field="id" class="hidden"></th>
+                                    <th data-field="sign">文件预览</th>
+                                    <th data-field="remark">备注名称</th>
+                                    <th data-field="type">文件类型</th>
+                                    <th data-field="time">播放时长(s)</th>
+                                </tr>
+                                </thead>
+                                <tbody id="filelist">
+
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="saveinfo()">保存</button>
+                <button type="button" class="btn btn-danger" onclick="deleteProgram()">删除</button>
+                <button type="button" class="btn btn-default" onclick="closeinfo()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加设备 -->
+<div class="modal fade" id="deviceDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:850px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">添加设备</h4>
+            </div>
+            <form class="form-horizontal" id="deivcefoget" name="deivcefoget" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body col-md-12">
+                    <div class="panel-heading " style="padding: 0px;">
+                        <div style="display: inline-block;width: 100%; padding-top: 10px">
+                            <div class=" col-sm-12">
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="addtermsn" name="addtermsn"
+                                           placeholder="请输入终端序列号" maxlength="100"
+                                           style="width: 120px;padding-bottom: 0px;padding-top: 0px;height: 34px;"
+                                           onkeyup="this.value=this.value.replace(/[^\uFF00-\uFFFF\u4e00-\u9fa5\w\@\&\-]/g,'')">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="addremark" name="addremark"
+                                           placeholder="请输入备注" maxlength="100"
+                                           style="width: 120px;padding-bottom: 0px;padding-top: 0px;height: 34px;">
+                                </div>
+
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <select id="addtermmodel" name="addtermmodel" class="form-control"
+                                            style="width:150px">
+                                        <option value="" style="color:lightgrey;">请选择设备型号</option>
+                                    </select>
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <select id="groupid" name="groupid" class="form-control"
+                                            style="width:120px">
+                                        <option value="" style="color:lightgrey;">请选择分组</option>
+                                    </select>
+                                </div>
+                                <div class="btn-group">
+                                    <select id="addstatus" name="addstatus" class="form-control">
+                                        <option value="" style="color:lightgrey;">在线状态</option>
+                                        <option value="1" style="color:deepskyblue;">在线</option>
+                                        <option value="0" style="color:red;">离线</option>
+                                    </select>
+                                </div>&nbsp;&nbsp;
+                                <div class="btn-group right">
+                                    <button id="queryBtn3" type="button" class="btn btn-primary" onclick="openDevice(1)">
+                                        查询
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table id="deviceAddtable" class="table table-striped scroll-bar"
+                           style="table-layout:fixed; word-break:break-all; display:block; height: 600px; overflow:auto">
+                        <thead>
+                        <tr>
+                            <th data-checkbox="true" data-select="false"></th>
+                            <th data-field="id" class="hidden"></th>
+                            <th data-field="termsn">终端序列号</th>
+                            <th data-field="termmodel">设备型号</th>
+                            <th data-field="remark">备注</th>
+                            <th data-field="status">状态</th>
+                        </tr>
+                        </thead>
+                        <tbody id="deviceAddlist">
+
+                        </tbody>
+                    </table>
+                    <!-- 翻页组件B -->
+                    <div th:replace="commons::paginater_B"></div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="addDevice()">添加</button>
+                <button type="button" class="btn btn-default" onclick="closeDevcie()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加文件框 -->
+<div class="modal fade" id="filelistDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:850px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">选择文件</h4>
+            </div>
+            <form class="form-horizontal" id="filelistfoget" name="filelistfoget" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body col-md-12">
+                    <div class="panel-heading " style="padding: 0px;">
+                        <div style="display: inline-block;width: 100%; padding-top: 10px">
+                            <div class=" col-sm-12">
+                                <div class="btn-group">
+                                    <input size="20" type="text" id="fileremark" name="remark" placeholder="请输入备注名称"
+                                           maxlength="100"
+                                           style="width:150px;padding-bottom: 0px;padding-top: 0px;height: 34px;">
+                                </div>
+                                <div class="btn-group" style="width:150px; margin-top:5px; margin-bottom:5px;">
+                                    <div class="input-group date form_datetime">
+                                        <input size="20" type="text" id="startTime" name="startTime"
+                                               class="form-control"
+                                               readonly placeholder="上传起始时间">
+                                        <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>
+                                <div class="btn-group" style="width:150px; margin-top:5px; margin-bottom:5px;">
+                                    <div class="input-group date form_datetime">
+                                        <input size="20" type="text" id="endTime" name="endTime" class="form-control"
+                                               readonly placeholder="上传结束时间">
+                                        <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>&nbsp;&nbsp;
+                                <div class="btn-group">
+                                    <button id="queryBtn4" type="button" class="btn btn-primary" onclick="openFile(1)">
+                                        查询
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table id="fileAddtable" class="table table-striped scroll-bar"
+                           style="table-layout:fixed; word-break:break-all; display:block; height: 600px; overflow:auto">
+                        <thead>
+                        <tr>
+                            <th data-checkbox="true" data-select="false"></th>
+                            <th data-field="id" class="hidden"></th>
+                            <th data-field="sign">文件预览</th>
+                            <th data-field="remark">备注名称</th>
+                            <th data-field="type">文件类型</th>
+                            <th data-field="time">上传时间</th>
+                        </tr>
+                        </thead>
+                        <tbody id="fileAddlist">
+
+                        </tbody>
+                    </table>
+                    <!-- 翻页组件A -->
+                    <div th:replace="commons::paginater_A"></div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="addFile()">添加</button>
+                <button type="button" class="btn btn-default" onclick="closeFile()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 文件展示框 -->
+<div class="modal fade" id="fileDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog" id="filemodel">
+        <div class="modal-content" style="width: 550px;">
+            <div class="modal-header">
+                <div class="pull-right">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-danger" onclick="closepicture()">X</button>
+                    </div>
+                </div>
+                <h4 class="modal-title">文件展示</h4>
+            </div>
+            <form class="form-horizontal" id="msgpost" name="msgpost" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div id="imageinfo" class="modal-body" style="text-align: center">
+                    <img id="picture" style="width: 90%; padding-bottom: 10%"/>
+                </div>
+                <div id="video" style="width:100%;height:100%;"></div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" onclick="closepicture()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据统计框 -- 文件 -->
+<div class="modal fade" id="dataDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog" id="datamodel">
+        <div class="modal-content" style="width: 700px;">
+            <div class="modal-header">
+                <div class="pull-right">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-danger" onclick="closedata()">X</button>
+                    </div>
+                </div>
+                <h4 class="modal-title">数据统计</h4>
+            </div>
+            <form class="form-horizontal" id="datapost" name="datapost" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div id="datainfo" class="modal-body col-md-12">
+                    <div class="panel-heading " style="padding: 0px;">
+                        <div style="display: inline-block;width: 100%; padding-top: 10px">
+                            <div class=" col-sm-12">
+                                <div class="btn-group">
+                                    <select id="dataOption" name="dataOption" class="form-control">
+                                        <option value="0">统计所有</option>
+                                        <option value="1">按年统计</option>
+                                        <option value="2">按月统计</option>
+                                        <option value="3">按日统计</option>
+                                    </select>
+                                </div>
+                                <div class="btn-group" style="width:150px; margin-top:5px; margin-bottom:5px;">
+                                    <div class="input-group date form_datetime" id="datadate1">
+                                        <input size="20" type="text" id="datastartTime" name="datastartTime"
+                                               class="form-control"
+                                               readonly placeholder="统计起始日期">
+                                        <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>
+                                <div class="btn-group" style="width:150px; margin-top:5px; margin-bottom:5px;">
+                                    <div class="input-group date form_datetime" id="datadate2">
+                                        <input size="20" type="text" id="dataendTime" name="dataendTime" class="form-control"
+                                               readonly placeholder="统计结束日期">
+                                        <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>&nbsp;&nbsp;
+                                <div class="btn-group">
+                                    <button id="queryBtn6" type="button" class="btn btn-primary" onclick="getDataByType(1)">
+                                        查询
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table id="dataTable" class="table table-striped scroll-bar" width="100%"
+                           style="table-layout:fixed; ">
+                        <thead>
+                        <tr>
+                            <th data-field="time">统计日期</th>
+                            <th data-field="count">播放次数</th>
+                            <th data-field="dcount">播放设备数量</th>
+                            <th data-field="days">合计天数</th>
+                        </tr>
+                        </thead>
+                        <tbody id="datalist">
+
+                        </tbody>
+                    </table>
+                    <div style="padding-top: 40px">
+                        <!-- 翻页组件C -->
+                        <div th:replace="commons::paginater_C"></div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据统计框 -- 设备 -->
+<div class="modal fade" id="dataDialog1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog" id="datamodel1">
+        <div class="modal-content"  style="width:600px;">
+            <div class="modal-header">
+                <div class="pull-right">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-danger" onclick="closedata1()">X</button>
+                    </div>
+                </div>
+                <h4 class="modal-title">数据统计</h4>
+            </div>
+            <form class="form-horizontal" id="datapost1" name="datapost" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div id="datainfo1" class="modal-body col-md-12">
+                    <div class="panel-heading " style="padding: 0px;">
+                        <div style="display: inline-block;width: 100%; padding-top: 10px">
+                            <div class=" col-sm-12">
+                                <div class="btn-group">
+                                    <select id="dataOption1" name="dataOption1" class="form-control">
+                                        <option value="0">统计所有</option>
+                                        <option value="1">按年统计</option>
+                                        <option value="2">按月统计</option>
+                                        <option value="3">按日统计</option>
+                                    </select>
+                                </div>
+                                <div class="btn-group" style="width:150px; margin-top:5px; margin-bottom:5px;">
+                                    <div class="input-group date form_datetime" id="datadate3">
+                                        <input size="20" type="text" id="datastartTime1" name="datastartTime1"
+                                               class="form-control"
+                                               readonly placeholder="统计起始日期">
+                                        <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>
+                                <div class="btn-group" style="width:150px; margin-top:5px; margin-bottom:5px;">
+                                    <div class="input-group date form_datetime" id="datadate4">
+                                        <input size="20" type="text" id="dataendTime1" name="dataendTime1" class="form-control"
+                                               readonly placeholder="统计结束日期">
+                                        <span class="input-group-addon">
+						                        <span class="glyphicon glyphicon-calendar"></span>
+						                    </span>
+                                    </div>
+                                </div>&nbsp;&nbsp;
+                                <div class="btn-group">
+                                    <button id="queryBtn7" type="button" class="btn btn-primary" onclick="getDataByType1(1)">
+                                        查询
+                                    </button>
+                                </div>
+                                <div class="btn-group">
+                                    <button id="queryBtn8" type="button" class="btn btn-success" onclick="outPut()">
+                                        导出
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table id="dataTable1" class="table table-striped scroll-bar" width="100%"
+                           style="table-layout:fixed; word-break:break-all; display:block; height: 450px; overflow:auto">
+                        <thead>
+                        <tr>
+                            <th data-field="time">播放日期</th>
+                            <th data-field="device">设备名称</th>
+                            <th data-field="filename">素材名称</th>
+                            <th data-field="counts">播放次数</th>
+                        </tr>
+                        </thead>
+                        <tbody id="datalist1">
+
+                        </tbody>
+                    </table>
+                    <div style="padding-top: 40px">
+                        <!-- 翻页组件D -->
+                        <div th:replace="commons::paginater_D"></div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/static/js/common.js}"></script>
+<script th:src="@{/static/js/jquery-ui.min.js}"></script>
+<script th:src="@{/static/js/jquery.ztree.all-3.5.min.js}"></script>
+<script th:src="@{/static/js/bootstrap-datetimepicker.js}"></script>
+<script th:src="@{/static/js/bootstrap-datetimepicker.zh-CN.js}"></script>
+<script th:src="@{/static/js/bootstrap-table.js}"></script>
+<script th:src="@{/static/js/bootstrap-table-zh-CN.js}"></script>
+<script th:src="@{/static/js/bootstrap-table-reorder-rows.js}"></script>
+<script th:src="@{/static/js/jquery.tablednd.min.js}"></script>
+<script th:src="@{/static/js/ckplayer.js}"></script>
+<script th:inline="javascript">
+    /** ----------初始化表格控件-------- */
+    $(document).ready(function () {
+        $("#devicetable").bootstrapTable({
+            striped: true
+        });
+        $("#filetable").bootstrapTable({
+            reorderableRows: true,
+            striped: true,
+            useRowAttrFunc: true
+        });
+        $("#deviceAddtable").bootstrapTable({
+            striped: true
+        });
+        $("#fileAddtable").bootstrapTable({
+            striped: true
+        });
+        $("#dataTable").bootstrapTable({
+            striped: true
+        });
+        $("#dataTable1").bootstrapTable({
+            striped: true
+        });
+    });
+
+    /** ----------初始化日历控件-------- */
+    $("#datadate1, #datadate2, #datadate3, #datadate4").datetimepicker({
+        format: "yyyy-mm-dd",
+        autoclose: true,
+        todayBtn: true,
+        clearBtn: true,
+        language: 'zh-CN',
+        pickerPosition: "bottom-left",
+        minView: 2
+    });
+    $(".form_datetime").datetimepicker({
+        format: "yyyy-mm-dd hh:ii:00",
+        autoclose: true,
+        todayBtn: true,
+        clearBtn: true,
+        language: 'zh-CN',
+        pickerPosition: "bottom-left",
+        minView: 0
+    });
+    /** ----------模态框拖动功能---------- */
+    /*$("#filemodel").draggable();
+    $("#fileDialog").css("overflow", "hidden");*/
+    //所有框都可拖动
+    /*$(document).on("show.bs.modal", ".modal", function () {
+        $('.modal-dialog').draggable();
+        // 不拖动透明背景
+        $(this).css("overflow", "hidden");
+    });*/
+
+    /** -----表格左侧树状目录加载组方法 start----- **/
+    /* 设置树形目录参数 */
+    var setting = {
+        view: {
+            selectedMulti: false
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        callback: {
+            beforeClick: zTreeBeforeClick
+        }
+    };
+
+    /* 初始化查询,保留之前的选中状态 */
+    var zNodes = [[${menuTreeBeans}]];
+    var zTree;
+    $(document).ready(function () {
+        zTree = $.fn.zTree.init($("#programTree"), setting, zNodes);
+        var treeObj = $.fn.zTree.getZTreeObj("programTree");
+        var companyid = $('#companyid').val();
+        var programid = $('#programid').val();
+        var msg = $('#msg').val();
+        var node = null;
+        if (companyid != "")
+            node = treeObj.getNodeByParam("id", companyid, null);
+        {
+        }
+        if (programid != "" && programid != 0) {
+            node = treeObj.getNodeByParam("id", programid, null);
+        }
+        if (node != null) {
+            $("#" + node.tId + "_a").attr('class', 'curSelectedNode');
+        }
+
+        //显示回调信息
+        if (msg != "") {
+            alert(msg);
+        }
+    });
+
+    /* 点击项目树查询: treeNode.id（为节点id），treeNode.pid（父节点id），treeNode.tId（菜单名_节点自然顺序） */
+    function zTreeBeforeClick(treeId, treeNode, clickFlag) {
+        if (treeNode.getParentNode() == null) {
+            /*若没有父节点,则父节点为根节点，向一级菜单跳转*/
+            location.href = "/DMIL/file/list?companyid=" + treeNode.id + "&programid=" + "&pageSize=" + $("#pageSize").val();
+        } else {
+            /*打开节目单*/
+            openprogram(treeNode.id);
+        }
+    }
+    /* 左侧查询框查询方法 */
+    function querytree() {
+        var querytype = $("#querytype").val();
+        var queryinfo = $("#queryinfo").val();
+        //重置树形菜单
+        zTree = $.fn.zTree.init($("#programTree"), setting, zNodes);
+        if (queryinfo == "") {
+            $("#queryinfo").focus();
+            return;
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/queryProgram"
+            , data: {
+                querytype: querytype,
+                queryinfo: queryinfo}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //获取节目单信息
+                    var programs = data.programlist;
+                    var treeObj = $.fn.zTree.getZTreeObj("programTree");
+                    for (var i = 0; i < programs.length; i++) {
+                        var node = null;
+                        //根据名称获取节点
+                        node = treeObj.getNodeByParam("name", programs[i].name, null);
+                        if (node != null) {
+                            //获取父节点
+                            var pnode = node.getParentNode();
+                            //展开父节点并选中节目单
+                            treeObj.expandNode(pnode, true);
+                            $("#" + node.tId + "_a").attr('class', 'curSelectedNode');
+                        }
+                    }
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+
+    }
+
+    /** -----表格左侧树状目录加载组方法 end----- **/
+
+
+    /** -------- 条件查询  start ------------*/
+    //查询按钮
+    function querylist() {
+        var programid = $('#programid').val();
+        var companyid = $("#companyid").val();
+        var msg = $("#msg").val();
+
+        var start = $("#startDate_createTime").val();
+        var end = $("#endDate_createTime").val();
+        var remark = $("#remark").val();
+        var choosetype = $("#choosetype").val();
+
+        if((start != "" && end == "")||(start == "" && end != "")){
+            alert("请将起止时间选择完整！")
+            return;
+        }
+        if(start > end){
+            alert("开始时间不得晚于结束时间！")
+            return;
+        }
+
+        location.href = "/DMIL/file/list?companyid=" + companyid + "&programid=" + programid + "&msg=" + encodeURI(msg)
+            + "&start=" + start + "&end=" + end + "&remark=" + encodeURI(remark) + "&filetype=" + choosetype
+            + "&page=1" + "&pageSize=" + $("#pageSize").val();
+    }
+
+    /** -------- 条件查询  end ------------*/
+
+
+    /** -------- 文件上传  start ------------*/
+    /*打开文件上传弹窗*/
+    function uploadfile() {
+        $("#zipFile").val("");
+        $('#uploadDialog').modal('show');
+    }
+
+    /*取消上传，关闭弹窗*/
+    function uploadcancel() {
+        $('#uploadDialog').modal('hide');
+        $("#zipFile").val("");
+        $("#fileupremark").val("");
+    }
+
+    /*上传文件*/
+    var isClick = true;
+    function fileSave() {
+        if (isClick) {
+            var zipFile = $("#zipFile").val().trim();
+            if (zipFile == "") {
+                alert("未上传，请选择文件！");
+                return false;
+            }
+            //判断格式是否支持
+            var filetype = ["JPG", "JPEG", "PNG", "BMP", "MP4", "AVI", "MOV"];
+            var realtype = zipFile.substring(zipFile.lastIndexOf(".") + 1).toUpperCase();
+            if (filetype.indexOf(realtype) == -1) {
+                alert("文件类型暂不支持，请重新选择文件！");
+                return false;
+            }
+
+            //获取上传软件
+            var formObj = document.getElementById("softwareFormAdd");
+
+            //软件大小
+            var fileSize = 0;
+            //限制大小，200MB
+            var limited = 1024 * 1024 * 200;
+
+            //限制文件大小，兼用IE7、8
+            if (window.ActiveXObject) {
+                var path = formObj.value;
+                var fileActObj = new ActiveXObject("Scripting.FileSystemObject");
+                fileSize = fileActObj.GetFile(path).size;
+            } else {
+                //其他浏览器
+                fileSize = document.getElementById("zipFile").files[0].size;
+            }
+            if (fileSize > limited) {
+                alert("文件超过200MB，无法上传！");
+                location.reload();
+                return false;
+            }
+
+            //背景恢复
+            //$(".progress").css("background", "#28a745");
+            //归零 隐藏
+            $("#mt-progress-length").css({"width": "0%", "opacity": "1"});
+            $("#mt-progress-value").html(0);
+            $("#spanIdForSearch").show();
+
+            isClick = false;
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/file/fileUpload"
+                , data: new FormData(formObj)
+                , processData: false
+                , contentType: false
+                , cache: false
+                , enctype: 'multipart/form-data'
+                , xhr: function () {
+                    //获取ajax中的ajaxSettings的xhr对象为他的upload属性绑定progress事件的处理函数
+                    var myXhr = $.ajaxSettings.xhr();
+                    if (myXhr.upload) {
+                        //检查其属性upload是否存在
+                        myXhr.upload.addEventListener("progress", resultProgress, false);
+                    }
+                    return myXhr;
+                }
+                , success: function (data) {
+                    if (data.obj1 == "success") {
+                        var date1 = new Date();
+                        $("#spanIdForSearch").hide();
+                        var date2 = new Date();
+                        var timeout1 = setTimeout(function () {
+                            //成功后备注
+                            saveUpName($("#fileupremark").val(), zipFile);
+                            //alert("文件上传成功！");
+                            location.reload();
+                        }, date2 - date1);
+                    } else {
+                        $("#spanIdForSearch").hide();
+                        isClick = true;
+                        alert(data.obj1);
+                    }
+                }
+                , error: function (data) {
+                    alert("上传异常，请重试！");
+                    location.reload();
+                }
+            });
+        }
+    }
+
+    //上传进度回调函数
+    function resultProgress(e) {
+        if (e.lengthComputable) {
+            var percent = e.loaded / e.total * 100;
+            $(".show_result").html(percent + "%");
+            var percentStr = String(percent);
+            if (percentStr == "100") {
+                percentStr = "100.0";
+            }
+            percentStr = percentStr.substring(0, percentStr.indexOf("."));
+            $("#mt-progress-value").html(percentStr);
+            $("#mt-progress-length").css("width", percentStr + "%");
+
+            if (percentStr == "100") {
+                setTimeout(function () {
+                    //背景成绿色
+                    //$(".progress").css("background", "#15AD66");
+                    //归零 隐藏
+                    $("#mt-progress-length").css({"width": "0%", "opacity": "0"});
+                }, 50);
+
+
+            }
+        }
+    }
+
+    //保存备注名称
+    function saveUpName(remark, name) {
+        //首次备注不为空才去备注
+        if (remark != "") {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/file/remarkfile"
+                , data: {remark: remark, name: name}
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 != 'success') {
+                        alert(data.obj1);
+                    }
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+
+    }
+
+    /** -------- 文件上传  end ------------*/
+
+
+    /** -------- 文件操作  start ------------*/
+    //下载文件
+    function downfile(id) {
+        location.href = "/DMIL/file/downFile?id=" + id;
+    }
+
+    //删除文件
+    function deletefile(id) {
+        if (confirm("确定删除已上传的文件？")) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/file/deleteFile"
+                , data: {id: id}
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , enctype: 'multipart/form-data'
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 != "success") {
+                        alert(data.obj1);
+                    }
+                    location.reload();
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+    }
+
+    //获取文件详情
+    var playerflag = false;
+    var player;
+    function getfile(id) {
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/getFile"
+            , data: {id: id}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    console.log("获取成功");
+                    //展示大图
+                    if (data.filetype == "1") {
+                        $("#imageinfo").removeClass("hidden");
+                        $("#video").addClass("hidden");
+                        $("#picture").attr("src", data.obj2);
+                    } else if (data.filetype == "2") {
+                        $("#video").removeClass("hidden");
+                        $("#imageinfo").addClass("hidden");
+                        var videoObject = {
+                            container: '#video',//“#”代表容器的ID，“.”或“”代表容器的class
+                            variable: 'player',//该属性必需设置，值等于下面的new chplayer()的对象
+                            flashplayer: false,//如果强制使用flashplayer则设置成true
+                            allowFullScreen: true,//是否支持全屏
+                            schedule: 1,//进度条设置：0=不启用，1=启用，2=只能前进（向右拖动），3=只能后退，4=只能前进但能回到第一次拖动时的位置，5=看过的地方可以随意拖动
+                            video: {
+                                file: data.obj2,//视频地址
+                                type: 'video/mp4'
+                            }
+                        };
+                        player = new ckplayer(videoObject);
+                        playerflag = true;
+                    }
+                    $('#fileDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /*关闭文件*/
+    function closepicture() {
+        $('#fileDialog').modal('hide');
+        //暂停播放视频
+        if (playerflag) {
+            player.videoPause();
+        }
+    }
+
+    /*打开备注名称*/
+    var remarkid = 0;
+    function remarkfile(id, remark) {
+        remarkid = id;
+        $('#doremark').val(remark);
+        $('#RemarkDialog').modal('show');
+    }
+
+    /*保存备注*/
+    function savere() {
+        var remark = $("#doremark").val();
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/remarkfile"
+            , data: {id: remarkid, remark: remark}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    $('#RemarkDialog').modal('hide');
+                    location.reload();
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /*关闭备注*/
+    function closere() {
+        $('#RemarkDialog').modal('hide');
+    }
+
+    /** -------- 文件操作  end ------------*/
+
+
+    /** ----- 节目单操作 start ----- **/
+    //制作节目单
+    function makeProgram() {
+        programid = 0;
+        $('#programDialog').modal('show');
+    }
+
+    //打开节目单
+    var programid = 0;
+
+    function openprogram(id) {
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/getProgram"
+            , data: {programid: id}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: false
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    programid = data.obj2.id;
+                    /** 左侧节目单信息 */
+                    $('#programname').val(data.obj2.name);
+                    $('#programtype').val(data.obj2.type);
+                    $('#filmodel').val(data.obj2.fitmodel);
+
+                    //加载已选设备信息和已选数量
+                    $('#hasgot').text(data.devicelist.length);
+                    $('#devicetable').bootstrapTable('removeAll');
+                    for (var i = 0; i < data.devicelist.length; i++) {
+                        var id = data.devicelist[i].id;
+                        var termsn = data.devicelist[i].termsn;
+                        var termmodel = data.devicelist[i].termmodel;
+                        var remark = data.devicelist[i].remark;
+                        var status = '';
+                        if (data.devicelist[i].status == '1') {
+                            status = '<label style="color:deepskyblue;">在线</label>';
+                        } else {
+                            status = '<label style="color:red;">离线</label>';
+                        }
+
+                        $('#devicetable').bootstrapTable('append', {
+                            'index': i,
+                            'id': id,
+                            'termsn': termsn,
+                            'termmodel': termmodel,
+                            'remark': remark,
+                            'status': status
+                        });
+                    }
+
+                    /** 右侧节目单信息 */
+                    //先清空内容，再加载节目单
+                    $('#filetable').bootstrapTable('removeAll');
+                    for (var i = 0; i < data.filelist.length; i++) {
+                        var id = data.filelist[i].id;
+                        var sign = '';
+                        var type = '';
+                        var remark = data.filelist[i].remark;
+                        var time = '<input id="timelast_' + i + '" style="width:50px" value="' + data.timelast[i] + '" maxlength="3" ' +
+                            'onblur="changeInputValue(this)" oninput ="value=value.replace(/[^\\d]/g,\'\')"/>';
+                        if (data.filelist[i].filetype == '1') {
+                            type = '<label style="color:deepskyblue;">图片</label>';
+                            sign = '<img onclick="getfile(' + id + ')" onchange="changedata(this)" src="/DMIL/file/downFile?id=' + data.filelist[i].id + '" style="width: 100px; height: 60px;"/>';
+                        } else if (data.filelist[i].filetype == '2') {
+                            type = '<label style="color:limegreen;">视频</label>';
+                            sign = '<img onclick="getfile(' + id + ')" src="/DMIL/file/downShotFile?id=' + data.filelist[i].id + '" style="width: 100px; height: 60px;"/>';
+                            time = '<input id="timelast_' + i + '" style="width:50px" value="" readonly>';
+                        } else {
+                            type = '<label style="color:red;">未知</label>';
+                        }
+
+                        $('#filetable').bootstrapTable('append', {
+                            'index': i,
+                            'id': id,
+                            'sign': sign,
+                            'type': type,
+                            'remark': remark,
+                            'time': time
+                        });
+                    }
+
+                    $('#programDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //保存节目单
+    function saveinfo() {
+        var programname = $('#programname').val();
+        var programtype = $("#programtype").val();
+        var filmodel = $("#filmodel").val();
+        var deviceids = getAllidstr($('#devicetable'));
+        var fileids = getAllidstr($('#filetable'));
+        var timelast = getAllInputstrById($('#filetable'), 'timelast_');
+        if (programname == '') {
+            alert("请填写节目单名称！");
+            $('#programname').focus();
+            return;
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/saveProgram"
+            , data: {
+                programid: programid,
+                programname: programname,
+                programtype: programtype,
+                filmodel: filmodel,
+                deviceids: deviceids,
+                fileids: fileids,
+                timelast: timelast
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    closeinfo();
+                    setTimeout(function () {
+                        location.reload();
+                    }, 300);
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+        //$('#programDialog').modal('hide');
+    }
+
+    //关闭节目单
+    function closeinfo() {
+        $('#programDialog').modal('hide');
+
+        //清空数据
+        $('#programname').val('');
+        $("#programtype").val("1");
+        $("#filmodel").val("1");
+        $('#hasgot').text(0);
+        $('#devicetable').bootstrapTable('removeAll');
+        $('#filetable').bootstrapTable('removeAll');
+        programid = 0;
+    }
+
+    //发布节目单
+    function pubprogram() {
+        var programname = $('#programname').val();
+        var programtype = $("#programtype").val();
+        var filmodel = $("#filmodel").val();
+        var deviceids = getAllidstr($('#devicetable'));
+        var fileids = getAllidstr($('#filetable'));
+        var timelast = getAllInputstrById($('#filetable'), 'timelast_');
+        if (programname == '') {
+            alert("请填写节目单名称！");
+            $('#programname').focus();
+            return;
+        }
+        if (deviceids == "") {
+            alert("请添加设备！");
+            return;
+        }
+        if (fileids == "") {
+            alert("请添加素材文件！");
+            return;
+        }
+        if (confirm("发布到设备？")) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/file/pubProgram"
+                , data: {
+                    programid: programid,
+                    programname: programname,
+                    programtype: programtype,
+                    filmodel: filmodel,
+                    deviceids: deviceids,
+                    fileids: fileids,
+                    timelast: timelast
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , async: false
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        alert("发布成功！");
+                        closeinfo();
+                        location.reload();
+                    } else {
+                        alert(data.obj1);
+                    }
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+    }
+
+    //删除节目单
+    function deleteProgram() {
+        if (programid == 0) {
+            closeinfo();
+            return;
+        }
+        if (confirm("确定删除该节目单？")) {
+            $.ajax({
+                type: "POST"
+                , url: "/DMIL/file/deleteProgram"
+                , data: {
+                    programid: programid
+                }
+                , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+                , dataType: "json"
+                , async: false
+                , cache: false
+                , success: function (data) {
+                    if (data.obj1 == 'success') {
+                        //alert("删除成功！");
+                        location.reload();
+                    } else {
+                        alert(data.obj1);
+                    }
+                }
+                , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    //alert(XMLHttpRequest.status + textStatus);
+                }
+            });
+        }
+    }
+
+    /** ----- 节目单操作 end ----- **/
+
+
+    /** ----- 选择发布设备操作 start ----- */
+    //打开设备列表
+    function openDevice(toPage) {
+        if (toPage == "") {
+            if ($("#page_B").val() != "") {
+                toPage = $("#page_B").val();
+            } else {
+                toPage = 1;
+            }
+        }
+        var termsn = $('#addtermsn').val();
+        var remark = $("#addremark").val();
+        var termmodel = $("#addtermmodel").val();
+        var groupid = $("#groupid").val();
+        var status = $("#addstatus").val();
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/getDeviceList"
+            , data: {
+                termsn: termsn,
+                remark: remark,
+                termmodel: termmodel,
+                projectid: groupid,
+                status: status,
+                devices: getAllidstr($('#devicetable')),
+                toPage: toPage,
+                pageSize: $("#pageSize_B").val()
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: false
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //加载设备类型
+                    var termlist = "<option value='' style='color:lightgrey;'>请选择设备型号</option>";
+                    for (var i = 0; i < data.termlist.length; i++) {
+                        if (data.termlist[i].termmodel == $("#addtermmodel").val()) {
+                            termlist += "<option value='" + data.termlist[i].termmodel + "' selected>" + data.termlist[i].termmodel + "</option>";
+                        } else {
+                            termlist += "<option value='" + data.termlist[i].termmodel + "'>" + data.termlist[i].termmodel + "</option>";
+                        }
+                    }
+                    $('#addtermmodel').html(termlist);
+
+                    //加载分组选项
+                    var grouplist = "<option value='' style='color:lightgrey;'>请选择分组</option>";
+                    for (var i = 0; i < data.groups.length; i++) {
+                        if (data.groups[i].id == $("#groupid").val()) {
+                            grouplist += "<option value='" + data.groups[i].id + "' selected>" + data.groups[i].name + "</option>";
+                        } else {
+                            grouplist += "<option value='" + data.groups[i].id + "'>" + data.groups[i].name + "</option>";
+                        }
+                    }
+                    $('#groupid').html(grouplist);
+
+                    //加载设备表数据
+                    $('#deviceAddtable').bootstrapTable('removeAll');
+                    for (var i = 0; i < data.devicelist.length; i++) {
+                        var id = data.devicelist[i].id;
+                        var termsn = data.devicelist[i].termsn;
+                        var termmodel = data.devicelist[i].termmodel;
+                        var remark = data.devicelist[i].remark;
+                        var status = '';
+                        if (data.devicelist[i].status == '1') {
+                            status = '<label style="color:deepskyblue;">在线</label>';
+                        } else {
+                            status = '<label style="color:red;">离线</label>';
+                        }
+
+                        $('#deviceAddtable').bootstrapTable('append', {
+                            'id': id,
+                            'termsn': termsn,
+                            'termmodel': termmodel,
+                            'remark': remark,
+                            'status': status
+                        });
+                    }
+
+                    //加载页码B
+                    var pagedetail = pageBinit("openDevice", toPage, data.maxPage, data.count);
+                    $("#pagefootB").html(pagedetail);
+
+                    $('#deviceDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //添加到表格
+    function addDevice() {
+        //获取勾选设备
+        var rows = $('#deviceAddtable').bootstrapTable('getSelections');
+        //获取最大index
+        var max = getMaxIndex($('#devicetable'));
+
+        $.each(rows, function (index, rowdata) {
+            var current = max + index + 1;
+
+            //根据id判断是否已经添加
+            var ids = getAllidstr($('#devicetable')).toString().split(",");
+            if (ids.indexOf(rowdata.id.toString()) == -1) {
+                $('#devicetable').bootstrapTable('append', {
+                    'index': current,
+                    'id': rowdata.id,
+                    'termsn': rowdata.termsn,
+                    'termmodel': rowdata.termmodel,
+                    'remark': rowdata.remark,
+                    'status': rowdata.status
+                });
+            }
+        });
+        checkgot();
+        closeDevcie();
+    }
+
+    //关闭设备列表
+    function closeDevcie() {
+        $('#deviceDialog').modal('hide');
+        //清除条件
+        $('#addtermsn').val('');
+        $("#addremark").val('');
+        $("#addtermmodel").val('');
+        $("#addstatus").val('');
+    }
+
+    //修正已选设备数量
+    function checkgot() {
+        $("#hasgot").text(getRowNum($("#devicetable")));
+    }
+
+    /** ----- 选择发布设备操作 end ----- */
+
+
+    /** ----- 选择素材操作 start ----- */
+    //打开素材列表
+    function openFile(toPage) {
+        if (toPage == "") {
+            if ($("#page_A").val() != "") {
+                toPage = $("#page_A").val();
+            } else {
+                toPage = 1;
+            }
+        }
+        var remark = $("#fileremark").val();
+        var startTime = $("#startTime").val();
+        var endTime = $("#endTime").val();
+        if(startTime > endTime){
+            alert("开始时间不得晚于结束时间！");
+            return;
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/getFileList"
+            , data: {
+                remark: remark,
+                startTime: startTime,
+                endTime: endTime,
+                toPage: toPage,
+                pageSize: $("#pageSize_A").val()
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: false
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //加载文件表数据
+                    $('#fileAddtable').bootstrapTable('removeAll');
+                    for (var i = 0; i < data.filelist.length; i++) {
+                        var id = data.filelist[i].id;
+                        var sign = '';
+                        //var time = (new Date(data.filelist[i].uploadtime)).Format();
+                        var time = (data.filelist[i].uploadtime.toString()).substring(0, 19).replace("T", " ");
+                        var remark = data.filelist[i].remark;
+                        var type = '';
+                        if (data.filelist[i].filetype == '1') {
+                            type = '<label style="color:deepskyblue;">图片</label>';
+                            sign = '<img onclick="getfile(' + id + ')" src="/DMIL/file/downFile?id=' + data.filelist[i].id + '" style="width: 100px; height: 60px;"/>';
+                        } else if (data.filelist[i].filetype == '2') {
+                            type = '<label style="color:limegreen;">视频</label>';
+                            sign = '<img onclick="getfile(' + id + ')" src="/DMIL/file/downShotFile?id=' + data.filelist[i].id + '" style="width: 100px; height: 60px;"/>';
+                        } else {
+                            type = '<label style="color:red;">未知</label>';
+                        }
+
+                        $('#fileAddtable').bootstrapTable('append', {
+                            'id': id,
+                            'sign': sign,
+                            'type': type,
+                            'time': time,
+                            'remark': remark
+                        });
+                    }
+
+                    //加载页码A
+                    var pagedetail = pageAinit("openFile", toPage, data.maxPage, data.count);
+                    $("#pagefootA").html(pagedetail);
+
+                    $('#filelistDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //添加到表格
+    function addFile() {
+        //获取勾选设备
+        var rows = $('#fileAddtable').bootstrapTable('getSelections');
+        //获取最大index
+        var max = getMaxIndex($('#filetable'));
+
+        $.each(rows, function (index, rowdata) {
+            var current = max + index + 1;
+            //生成时长对象
+            var time = '<input id="timelast_' + current + '" style="width:50px" value="10" maxlength="3" ' +
+                'onblur="changeInputValue(this)" oninput ="value=value.replace(/[^\\d]/g,\'\')"/>';
+            if (rowdata.type.indexOf("图片") == -1) {
+                time = '<input id="timelast_' + current + '" style="width:50px" value="" readonly>';
+            }
+
+            $('#filetable').bootstrapTable('append', {
+                'index': current,
+                'id': rowdata.id,
+                'sign': rowdata.sign,
+                'type': rowdata.type,
+                'remark': rowdata.remark,
+                'time': time
+            });
+        });
+        closeFile();
+    }
+
+    //关闭素材列表
+    function closeFile() {
+        $('#filelistDialog').modal('hide');
+        //清除条件
+        $('#fileremark').val('');
+        $("#startTime").val('');
+        $("#endTime").val('');
+    }
+
+    /** ----- 选择素材操作 end ----- */
+
+
+    /** ----- 数据统计展示 -- 文件 start ----- */
+    //打开数据统计弹窗
+    var dataid = 0;
+    function opendata(id) {
+        dataid = id;
+        var dataOption = $("#dataOption").val();
+        var startTime = $("#datastartTime").val();
+        var endTime = $("#dataendTime").val();
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/getfiledata"
+            , data: {
+                id:dataid,
+                dataOption: dataOption,
+                startTime: startTime,
+                endTime: endTime,
+                toPage: 1,
+                pageSize: 10
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: false
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //加载文件表数据
+                    dataload(data.dataList);
+
+                    //加载页码C
+                    var pagedetail = pageCinit("getDataByType", 1, data.maxPage, data.count);
+                    $("#pagefootC").html(pagedetail);
+
+                    $('#dataDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //统计翻页方法
+    function getDataByType(toPage) {
+        if (toPage == "") {
+            if ($("#page_C").val() != "") {
+                toPage = $("#page_C").val();
+            } else {
+                toPage = 1;
+            }
+        }
+        var dataOption = $("#dataOption").val();
+        var startTime = $("#datastartTime").val();
+        var endTime = $("#dataendTime").val();
+        if(startTime > endTime){
+            alert("开始日期不得晚于结束日期！");
+            return;
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/getfiledata"
+            , data: {
+                id: dataid,
+                dataOption: dataOption,
+                startTime: startTime,
+                endTime: endTime,
+                toPage: toPage,
+                pageSize: 10
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: false
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //加载文件表数据
+                    dataload(data.dataList);
+
+                    //加载页码C
+                    var pagedetail = pageCinit("getDataByType", toPage, data.maxPage, data.count);
+                    $("#pagefootC").html(pagedetail);
+
+                    $('#dataDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //统计表格加载方法
+    function dataload(dataList) {
+        $('#dataTable').bootstrapTable('removeAll');
+        for (var i = 0; i < dataList.length; i++) {
+            var time = dataList[i].time;
+            if ($("#dataOption").val() == 0) {
+                time = "所有日期";
+            }
+            var count = dataList[i].count;
+            var dcount = dataList[i].dcount;
+            var days = dataList[i].days;
+
+            $('#dataTable').bootstrapTable('append', {
+                'time': time,
+                'count': count,
+                'dcount': dcount,
+                'days': days
+            });
+        }
+    }
+
+    //关闭数据统计弹窗
+    function closedata() {
+        $('#dataDialog').modal('hide');
+        $("#dataOption").val(0);
+        $("#datastartTime").val('');
+        $("#dataendTime").val('');
+    }
+    /** ----- 数据统计展示 -- 文件 end ----- */
+
+
+    /** ----- 数据统计展示 -- 设备 start ----- */
+    //打开数据统计弹窗
+    function datafordevice() {
+        var dataOption = $("#dataOption1").val();
+        var startTime = $("#datastartTime1").val();
+        var endTime = $("#dataendTime1").val();
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/getdevicedata"
+            , data: {
+                dataOption: dataOption,
+                startTime: startTime,
+                endTime: endTime,
+                toPage: 1,
+                pageSize: 10
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: false
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //加载文件表数据
+                    dataload1(data.dataList);
+
+                    //加载页码C
+                    var pagedetail = pageDinit("getDataByType1", 1, data.maxPage, data.count);
+                    $("#pagefootD").html(pagedetail);
+
+                    $('#dataDialog1').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //统计翻页方法
+    function getDataByType1(toPage) {
+        if (toPage == "") {
+            if ($("#page_D").val() != "") {
+                toPage = $("#page_D").val();
+            } else {
+                toPage = 1;
+            }
+        }
+        var dataOption = $("#dataOption1").val();
+        var startTime = $("#datastartTime1").val();
+        var endTime = $("#dataendTime1").val();
+        if(startTime > endTime){
+            alert("开始日期不得晚于结束日期！");
+            return;
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/file/getdevicedata"
+            , data: {
+                dataOption: dataOption,
+                startTime: startTime,
+                endTime: endTime,
+                toPage: toPage,
+                pageSize: 10
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: false
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //加载文件表数据
+                    dataload1(data.dataList);
+
+                    //加载页码D
+                    var pagedetail = pageDinit("getDataByType1", toPage, data.maxPage, data.count);
+                    $("#pagefootD").html(pagedetail);
+
+                    $('#dataDialog1').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //设备统计表格加载方法
+    function dataload1(dataList) {
+        $('#dataTable1').bootstrapTable('removeAll');
+        for (var i = 0; i < dataList.length; i++) {
+            //解析info格式“时间，设备名称，文件名称”
+            var str = dataList[i].info;
+            if (str != "") {
+                var info = str.split(",");
+                var time = info[0];
+                if ($("#dataOption1").val() == 0) {
+                    time = " ";
+                }
+                var device = info[1];
+                var filename = info[2];
+                var counts = dataList[i].counts;
+
+                $('#dataTable1').bootstrapTable('append', {
+                    'time': time,
+                    'device': device,
+                    'filename': filename,
+                    'counts': counts
+                });
+            }
+        }
+    }
+
+    //关闭数据统计弹窗
+    function closedata1() {
+        $('#dataDialog1').modal('hide');
+        $("#dataOption1").val(0);
+        $("#datastartTime1").val('');
+        $("#dataendTime1").val('');
+    }
+    /** ----- 数据统计展示 -- 设备 end ----- */
+
+
+    /** ----- 数据导出 start ----- */
+    var clickflag = true;
+    function outPut() {
+        //防止连续点击
+        if (!clickflag) {
+            return;
+        }
+        clickflag = false;
+        var time = 2;
+        var timer = setInterval(function () {
+            time--;
+            if (time <= 0) {
+                clickflag = true;
+                clearInterval(timer);
+            }
+        }, 1000);
+
+        var dataOption = $("#dataOption1").val();
+        var startTime = $("#datastartTime1").val();
+        var endTime = $("#dataendTime1").val();
+        if (startTime == "" && endTime == "") {
+            alert("请选择日期范围！");
+            return;
+        }
+        if (startTime > endTime) {
+            alert("开始日期不得晚于结束日期！");
+            return;
+        }
+        location.href = "/DMIL/file/dataOutPut?dataOption=" + dataOption + "&startTime=" + startTime + "&endTime=" + endTime;
+
+    }
+
+    /** ----- 数据导出 end ----- */
+
+</script>
+</body>
+</html>

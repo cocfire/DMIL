@@ -8,7 +8,9 @@ import java.io.Serializable;
  * Serializable类用于将用户缓存信息(UserProfile)信息序列化，便于交给用户服务做校验
  */
 public class UserProfile implements Serializable {
-    //Alt+Enter自动添加，用于验证版本一致性的
+    /**
+     * Alt+Enter自动添加，用于验证版本一致性的
+     */
     private static final long serialVersionUID = -2512376725821143773L;
 
     /**
@@ -41,7 +43,39 @@ public class UserProfile implements Serializable {
      */
     protected String currentUserCompany;
 
-    public static long getSerialVersionUID() {
+    /**
+     * 用户权限
+     */
+    protected String userPermission;
+
+    /**
+     * 判断是否为管理员
+     *
+     * @return
+     */
+    public boolean isTheAdmin() {
+        Integer adminid = 888;
+        if (getCurrentUserId().equals(adminid)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * 判断是否为公司用户
+     *
+     * @return
+     */
+    public boolean isCompanyUser() {
+        if (getCurrentUserCompany() != null) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static long getSerialVersionUid() {
         return serialVersionUID;
     }
 
@@ -91,5 +125,13 @@ public class UserProfile implements Serializable {
 
     public void setCurrentUserCompany(String currentUserCompany) {
         this.currentUserCompany = currentUserCompany;
+    }
+
+    public String getUserPermission() {
+        return userPermission;
+    }
+
+    public void setUserPermission(String userPermission) {
+        this.userPermission = userPermission;
     }
 }

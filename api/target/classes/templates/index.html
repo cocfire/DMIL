@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>开发流程-demo</title>
+</head>
+<body>
+<div id=inputN>
+    <p style="font-weight:bold;coler:black;">流程说明:</p>
+    <textarea id="info" name="info" style="width:1140px; height:400px;outline:none; border:0;resize:none ;" readonly>
+            (1) 配置静态页面，添加到resource下的/templates目录（即为页面根目录）下；
+            (2) 后台添加controller类，只能使用@Controller注解修饰该类，若使用@RestController则只能作为接口；
+            (3) controller类中添加相应的方法，一般可使用@RequestMapping("")、@GetMapping("")、@PostMapping("")，括号内配置访问路径；
+            (4) 返回值类型通常为String，即为返回页面路径；
+        </textarea>
+</div>
+</body>
+</html>

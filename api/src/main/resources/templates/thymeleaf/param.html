@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="zh-cn" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="commons::common_header"><!-- 引入头文件 -->
+</head>
+<body>
+<link rel="stylesheet" th:href="@{/static/css/zTreeStyle.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui.min.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/jquery-ui-1.10.4.custom.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/bootstrap-datetimepicker.css}"/>
+<link rel="stylesheet" th:href="@{/static/css/bootstrap-switch.css}"/>
+<nav th:replace="commons::common_nav"></nav><!-- 引入导航栏 -->
+<div th:replace="commons::common_pwdmodal"></div><!-- 引入密码修改框 -->
+<!-- 设备管理模块整理视图 -->
+<div class="container" style="width: 1500px; margin-top: 50px">
+    <div class="panel panel-default" style=" width: 98%; margin-left: 1%;">
+        <!-- 表头功能按键 -->
+        <div class="panel-heading">
+            <div class="pull-right">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="openparam()" id="openparam">
+                        参数设置
+                    </button>
+                </div>&nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" onclick="location.reload()">
+                        刷新
+                    </button>
+                </div>
+            </div>
+            <h5> 设备控制 </h5>
+        </div>
+
+        <!-- 表格主体 -->
+        <form class="form-inline" role="form" id="formaboutdevice" name="formaboutdevice" action="/DMIL/param/list"
+              method="post">
+            <div class="panel-body">
+                <!-- 主体左侧树状目录 -->
+                <div class="panel panel-default col-sm-2"
+                     style="overflow-y:auto; overflow-x:auto; width:280px; height: 650px;">
+                    <div style="width:260px; padding-top: 10px">
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="projectid" type="hidden" th:value="${projectid}"><!-- 焦点所在子节点 -->
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="companyid" type="hidden" th:value="${companyid}"><!-- 焦点所在父节点 -->
+                        <!--suppress ALL--><!-- 该注解决EL表达式报错——关闭检测下一行表达式 -->
+                        <input id="msg" type="hidden" th:value="${msg}"><!-- 下载消息 -->
+                    </div>
+                    <ul id="deviceTree" class="ztree"></ul>
+                </div>
+
+                <!-- 主体右侧软件信息表格 -->
+                <div class="panel panel-default col-sm-10" style="left:10px; width:1100px; height:650px;">
+                    <div class="panel-heading " style="padding: 0px;">
+                        <div style="display: inline-block;width: 100%; padding-top: 10px">
+                            <div class=" col-sm-12">
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="termsn" name="termsn" th:value="${termsn}"
+                                           placeholder="请输入终端序列号" maxlength="100"
+                                           style="width: 150px;padding-bottom: 0px;padding-top: 0px;height: 34px;"
+                                           onkeyup="this.value=this.value.replace(/[^\uFF00-\uFFFF\u4e00-\u9fa5\w\@\&\-]/g,'')">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <input size="20" type="text" id="remark" name="remark" th:value="${remark}"
+                                           placeholder="请输入备注名称" maxlength="100"
+                                           style="width: 150px;padding-bottom: 0px;padding-top: 0px;height: 34px;">
+                                </div>
+                                <div class="btn-group"><!--suppress ALL-->
+                                    <select id="termmodel" name="termmodel" class="form-control" style="width: 150px"
+                                            th:value="${termmodel}">
+                                        <option value="" style="color:lightgrey;">请选择设备型号</option>
+                                        <!--suppress ALL-->
+                                        <option th:each="term : ${termlist}" th:value="${term.termmodel}"
+                                                th:text="${term.termmodel}"
+                                                th:selected="${term.termmodel == termmodel?'selected':'false'}">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="btn-group" style="display: none"><!--suppress ALL-->
+                                    <select id="erpcode" name="termmodel" class="form-control" style="width: 150px"
+                                            th:value="${erpcode}">
+                                        <option value="" style="color:lightgrey;">请选择设备软件</option>
+                                        <!--suppress ALL-->
+                                        <option th:each="software : ${softlist}" th:value="${software.erpcode}"
+                                                th:text="${software.customername}"
+                                                th:selected="${software.erpcode == erpcode?'selected':'false'}">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="btn-group" role="group"><!--suppress ALL-->
+                                    <input type="hidden" id="onlineStatus" th:value="${status}">
+                                    <button id="onlineCss" type="button" class="btn dropdown-toggle" style="width: 95px"
+                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span id="statusflag">全部状态</span>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="javascript:queryByStatus('')">全部状态</a></li>
+                                        <li><a href="javascript:queryByStatus('1')">在线</a></li>
+                                        <li><a href="javascript:queryByStatus('0')">离线</a></li>
+                                    </ul>
+                                    <script th:inline="javascript">
+                                        /* 设备状态下拉按钮预处理 */
+                                        $(document).ready(function () {
+                                            var status = [[${status}]];
+                                            if (status == 1) {
+                                                $("#statusflag").text("在线");
+                                                $("#onlineCss").addClass("btn-info");
+                                            } else if (status == 0) {
+                                                $("#statusflag").text("离线");
+                                                $("#onlineCss").addClass("btn-danger");
+                                            } else {
+                                                $("#statusflag").text("全部状态");
+                                                $("#onlineCss").addClass("btn-default");
+                                            }
+                                            return;
+                                        });
+
+                                        function queryByStatus(sta) {
+                                            if (sta == '1') {
+                                                $("#onlineStatus").val(1);
+                                            } else if (sta == '0') {
+                                                $("#onlineStatus").val(0);
+                                            } else {
+                                                $("#onlineStatus").val('');
+                                            }
+                                            querylist();
+                                        }
+                                    </script>
+                                </div>
+                                <div class="btn-group" role="group"><!--suppress ALL-->
+                                    <input type="hidden" id="isgroup" th:value="${isgroup}">
+                                    <button id="groupCss" type="button" class="btn dropdown-toggle" style="width: 95px"
+                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span id="groupflag">全部状态</span>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="javascript:queryByGroup('')">所有设备</a></li>
+                                        <li><a href="javascript:queryByGroup('1')">已分组</a></li>
+                                        <li><a href="javascript:queryByGroup('0')">未分组</a></li>
+                                    </ul>
+                                    <script th:inline="javascript">
+                                        /* 设备状态下拉按钮预处理 */
+                                        $(document).ready(function () {
+                                            var isgroup = [[${isgroup}]];
+                                            if (isgroup == 1) {
+                                                $("#groupflag").text("已分组");
+                                                $("#groupCss").addClass("btn-success");
+                                            } else if (isgroup == 0) {
+                                                $("#groupflag").text("未分组");
+                                                $("#groupCss").addClass("btn-warning");
+                                            } else {
+                                                $("#groupflag").text("所有设备");
+                                                $("#groupCss").addClass("btn-default");
+                                            }
+                                            return;
+                                        });
+
+                                        function queryByGroup(isGroup) {
+                                            if (isGroup == '1') {
+                                                $("#isgroup").val(1);
+                                            } else if (isGroup == '0') {
+                                                $("#isgroup").val(0);
+                                            } else {
+                                                $("#isgroup").val('');
+                                                $("#companyid").val('');
+                                                $("#projectid").val('');
+                                            }
+                                            querylist();
+                                        }
+                                    </script>
+                                </div>&nbsp;&nbsp;
+                                <div class="btn-group">
+                                    <button id="queryBtn2" type="button" class="btn btn-primary"
+                                            onclick="querylist()">
+                                        查询
+                                    </button>
+                                </div>
+                                <div class="pull-right">
+                                    <div id="switch" class="switch" data-on="info" data-on-label="&nbsp;" data-off-label="&nbsp;"
+                                         data-toggle="tooltip" data-placement="left" title="点击显示可设置参数的设备"><!--suppress ALL-->
+                                        <input id="isSet" type="checkbox" onchange="switchlist()" th:value="${isSet}" checked/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-striped scroll-bar"
+                           style="table-layout: fixed; display:block; height: 500px; overflow: auto">
+                        <!--suppress ALL-->
+                        <thead th:if="${datalist.size() > 0}">
+                        <tr>
+                            <th><!--suppress ALL-->
+                                <input type="checkbox" id="checkRow_head" name="checkRow_" value=""
+                                       th:onclick="|checkPageSelected_(this);loadpartids(this, ${datalist}, 'linkid', 0)|"/>
+                            </th>
+                            <th>终端序列号</th>
+                            <th>备注名称</th>
+                            <th>设备型号</th>
+                            <th>设备状态</th>
+                            <th>参数状态</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() > 0}">
+                        <!--suppress ALL-->
+                        <tr th:each="device : ${datalist}">
+                            <th scope="row"><!--suppress ALL-->
+                                <input th:if="${device.linkid != 0}" type="checkbox" name="checkRow_"
+                                       th:onclick="|checkRowSelected_(this);loadcheck(this, ${device.id})|"/>
+                            </th><!--suppress ALL-->
+                            <td th:text="${device.termsn}" style="width: 20%;"></td><!--suppress ALL-->
+                            <td th:text="${device.remark}" style="width: 20%;"></td><!--suppress ALL-->
+                            <td th:text="${device.paraminfo}" style="width: 15%;"><!--suppress ALL--></td>
+                            <td style="width: 10%;"><!--suppress ALL-->
+                                <label th:if="${device.status == 0}" style="color:red;">离线</label><!--suppress ALL-->
+                                <label th:if="${device.status == 1}" style="color:deepskyblue;">在线</label>
+                            </td>
+                            <td style="width: 15%;"><!--suppress ALL-->
+                                <label th:if="${device.linkid == 0}" style="color:red;">不可设置</label><!--suppress ALL-->
+                                <label th:if="${device.linkid != 0}" style="color:deepskyblue;">可设置</label>
+                            </td>
+
+                            <td style="width: 20%;"><!--suppress ALL-->
+                                <button th:if="${device.linkid != 0}" type="button" class="btn-xs btn-primary" th:onclick="|paramSet(${device.id})|">
+                                    参数设置
+                                </button><!--suppress ALL-->
+                            </td>
+                        </tr>
+                        </tbody><!--suppress ALL-->
+                        <tbody th:if="${datalist.size() == 0}">
+                        <div class="pagenodate" style="padding-top: 50px"><label style="color:red;">没有符合您要求的记录</label>
+                        </div>
+                        </tbody>
+                    </table>
+                    <!-- 分页组件 -->
+                    <div th:replace="commons::common_paginater"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!--    设备详情    -->
+<div class="modal fade" id="detailDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+     aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog" style="width:1000px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="machineModal">设备信息</h4>
+            </div>
+            <form class="form-horizontal" id="macinfoget" name="macinfoget" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div class="modal-body col-md-12">
+                    <!-- 第一列 -->
+                    <div class="col-md-6">
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="devicetype" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">设备型号：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="devicetype" name="devicetype" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="snumber" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">终端序列号：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="snumber" name="snumber" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="deviceid" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">安全模块号：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="deviceid" name="deviceid" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="macaddress" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">MAC地址：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="macaddress" name="macaddress" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="lanip" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">IP地址：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="lanip" name="lanip" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="imei" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">IMEI：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="imei" name="imei" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="machinetype" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">MEID：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="machinetype" name="machinetype" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="barcode" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">用户序列码：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="barcode" name="barcode" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="udid" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">广告平台id：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="udid" name="udid" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="uuid" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">ZP码：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="uuid" name="uuid" readonly>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="ctratetime" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">入网时间：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="ctratetime" name="ctratetime" readonly
+                                       decorator="com.routon.plcloud.common.decorator.PageDateTimeDecorator">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="moditytime" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">最后通信时间：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="moditytime" name="moditytime" readonly
+                                       decorator="com.routon.plcloud.common.decorator.PageDateTimeDecorator">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="status" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">在线状态：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="text" class="form-control " id="status" name="status" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <!--第二列-->
+                    <div class="col-md-6">
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="softwarelist" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">运行软件：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <textarea id="softwarelist" name="softwarelist" rows="4" cols="100" maxlength="500" wrap="off" readonly
+                                          style="overflow:scroll; resize: none; background-color: #EEEEEE" class="col-md-12"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="company" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">公司：</label>
+                            <div class="btn-group col-md-8" style="padding-left: 0px;" disabled="disabled">
+                                <!--suppress ALL-->
+                                <select id="company" name="company" class="form-control">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="groups" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">分组：</label>
+                            <div class="btn-group col-md-8" style="padding-left: 0px;" disabled="disabled">
+                                <!--suppress ALL-->
+                                <select id="groups" name="groups" class="form-control">
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="contact" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">联系人：</label>
+                            <div class="col-md-8" style="padding-left: 0px" readonly>
+                                <input type="text" maxlength="50" class="form-control " id="contact" name="contact">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;" readonly>
+                            <label for="telno" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">联系电话：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <input type="tel" maxlength="11" class="form-control " id="telno" name="telno">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="address" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">收货方地址：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <textarea id="address" name="address" rows="4" cols="100" maxlength="200"
+                                          style="resize: none;" class="col-md-12" readonly></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-right: 0px;">
+                            <label for="deviceremark" class="col-md-4 control-label"
+                                   style="padding-left: 0px;padding-right: 5%;">备注名称：</label>
+                            <div class="col-md-8" style="padding-left: 0px">
+                                <textarea id="deviceremark" name="deviceremark" rows="4" cols="100" maxlength="200"
+                                          style="resize: none;" class="col-md-12" readonly></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" onclick="closeinfo()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 设备参数框 -->
+<div class="modal fade" id="paramDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"
+     data-backdrop="static">
+    <div class="modal-dialog" id="paramModel">
+        <div class="modal-content" style="width: 520px;">
+            <div class="modal-header">
+                <div class="pull-right">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-danger" onclick="closeparam()">X</button>
+                    </div>
+                </div>
+                <h4 class="modal-title">设备参数</h4>
+            </div>
+            <form class="form-horizontal" id="parampost" name="parampost" role="form" method="post"
+                  enctype="multipart/form-data">
+                <div id="paraminfo" class="modal-body col-md-12">
+
+                    <table id="paramtable" class="table table-striped scroll-bar"
+                           style="table-layout:fixed; word-break:break-all; display:block; overflow:auto">
+                        <thead>
+                        <tr>
+                            <th data-field="id">参数代码</th>
+                            <th data-field="name">参数名称</th>
+                            <th data-field="value">参数值(0~100)</th>
+                            <th data-field="time">设定时间(24h)</th>
+                        </tr>
+                        </thead>
+                        <tbody id="paramlist">
+                            <tr id="param1" hidden>
+                                <td>1100</td>
+                                <td>白天音量&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                                <td>
+                                    <input id="paramValue1" type="number" style="width:65px;" oninput="if(value.length>3)value=value.slice(0,3);if(value>100)value=100;if(value<0)value=0"/>
+                                    &nbsp;%&nbsp;&nbsp;&nbsp;
+                                </td>
+                                <td>
+                                    <div class="btn-group" style="width:150px;">
+                                        <div class="input-group date form_datetime">
+                                            <input size="20" type="text" id="paramTime1" name="paramTime1"
+                                                   class="form-control"
+                                                   readonly placeholder="设定时间1">
+                                            <span class="input-group-addon">
+                                                    <span class="glyphicon glyphicon-calendar"></span>
+                                                </span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr id="param2" hidden>
+                                <td></td>
+                                <td>晚上音量&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                                <td>
+                                    <input id="paramValue2" type="number" style="width:65px;" oninput="if(value.length>3)value=value.slice(0,3);if(value>100)value=100;if(value<0)value=0"/>
+                                    &nbsp;%&nbsp;&nbsp;&nbsp;
+                                </td>
+                                <td>
+                                    <div class="btn-group" style="width:150px;">
+                                        <div class="input-group date form_datetime">
+                                            <input size="20" type="text" id="paramTime2" name="paramTime2"
+                                                   class="form-control"
+                                                   readonly placeholder="设定时间2">
+                                            <span class="input-group-addon">
+                                                    <span class="glyphicon glyphicon-calendar"></span>
+                                                </span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr id="param3" hidden>
+                                <td>1101</td>
+                                <td>定时重启&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                                <td>
+                                </td>
+                                <td>
+                                    <div class="btn-group" style="width:150px;">
+                                        <div class="input-group date form_datetime">
+                                            <input size="20" type="text" id="paramTime3" name="paramTime3"
+                                                   class="form-control"
+                                                   readonly placeholder="设定时间">
+                                            <span class="input-group-addon">
+                                                    <span class="glyphicon glyphicon-calendar"></span>
+                                                </span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="form-group" style="margin-left: 5px;">
+                        <span class="control-label" style="padding-left: 0px;color:red;">
+                            * 注：离线设备在线后才会生效
+                        </span>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="saveparam()">设置</button>
+                <button type="button" class="btn btn-default" onclick="closeparam()">返回</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/static/js/common.js}"></script>
+<script th:src="@{/static/js/jquery-ui.min.js}"></script>
+<script th:src="@{/static/js/jquery.ztree.all-3.5.min.js}"></script>
+<script th:src="@{/static/js/bootstrap-datetimepicker.js}"></script>
+<script th:src="@{/static/js/bootstrap-datetimepicker.zh-CN.js}"></script>
+<script th:src="@{/static/js/bootstrap-switch.js}"></script>
+<script th:inline="javascript">
+
+    $(function () {
+        /** ------- 初始化参数 -------- */
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/config/checkconfig"
+            , data: {}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: true
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+
+            }
+        });
+
+
+
+        /** ---------- 初始化按钮状态 -------- */
+        if (document.getElementsByName('checkRow_').length == 0) {
+            $("#openparam").attr("disabled", "true");
+        }
+
+        /** ---------- 初始化日历控件 -------- */
+        $(".form_datetime").datetimepicker({
+            format: "hh:ii",
+            autoclose: true,
+            todayBtn: true,
+            clearBtn: true,
+            language: 'zh-CN',
+            pickerPosition: "bottom-left",
+            startView: 1,
+            minView: 0,
+            maxView: 1,
+            forceParse: 0
+        });
+
+        /** ---------- 初始化提示框 -------- */
+        $('[data-toggle="tooltip"]').tooltip();
+
+        /** ---------- 初始化开关 -------- */
+        if ([[${isSet}]]) {
+            $(".switch-animate").removeClass("switch-off");
+            $(".switch-animate").addClass("switch-on");
+            $("#switch").attr("title", "点击显示所有的设备");
+        } else {
+            $(".switch-animate").removeClass("switch-on");
+            $(".switch-animate").addClass("switch-off");
+            $("#switch").attr("title", "点击显示可设置参数的设备");
+        }
+    })
+    /** -----表格左侧树状目录加载组方法 start----- **/
+    /* 设置树形目录参数 */
+    var setting = {
+        view: {
+            selectedMulti: false
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        callback: {
+            beforeClick: zTreeBeforeClick
+        }
+    };
+
+    /* 初始化查询，保留之前的选中状态 */
+    var zNodes = [[${menuTreeBeans}]];
+    var zTree;
+    $(document).ready(function () {
+        zTree = $.fn.zTree.init($("#deviceTree"), setting, zNodes);
+        var treeObj = $.fn.zTree.getZTreeObj("deviceTree");
+        var companyid = $('#companyid').val();
+        var projectid = $('#projectid').val();
+        var msg = $('#msg').val();
+        var node = null;
+        if (companyid != "") {
+            node = treeObj.getNodeByParam("id", companyid, null);
+        }
+        if (projectid != "" && projectid != 0) {
+            node = treeObj.getNodeByParam("id", projectid, null);
+        }
+        if (node != null) {
+            $("#" + node.tId + "_a").attr('class', 'curSelectedNode');
+        }
+
+        //显示回调信息
+        if (msg != "") {
+            alert(msg);
+        }
+    });
+
+    /* 点击项目树查询: treeNode.id（为节点id），treeNode.pid（父节点id），treeNode.tId（菜单名_节点自然顺序） */
+    function zTreeBeforeClick(treeId, treeNode, clickFlag) {
+        if (treeNode.getParentNode() == null) {
+            /*若没有父节点,则父节点为根节点，向一级菜单跳转*/
+            location.href = "/DMIL/param/list?companyid=" + treeNode.id + "&projectid=" + "&pageSize=" + $("#pageSize").val();
+        } else {
+            /*若父节点存在，则该节点为叶子节点，根据条件跳转*/
+            location.href = "/DMIL/param/list?companyid=" + treeNode.pid + "&projectid=" + treeNode.id + "&pageSize=" + $("#pageSize").val();
+        }
+    };
+
+    /*点击查询按钮查询树状目录*/
+    function searchDeviceByName() {
+        var projectname = $("#projectname").val();
+        var projectid = $('#projectid').val();
+        var orderid = $('#orderid').val();
+        var tourl = "";
+        if (projectname != "") {
+            tourl = "/DMIL/param/list?projectname=" + encodeURI(projectname) + "&pageSize=" + $("#pageSize").val();
+        } else {
+            tourl = "/DMIL/param/list?projectid=" + projectid + "&orderid=" + orderid + "&pageSize=" + $("#pageSize").val();
+        }
+        location.href = tourl;
+    }
+    /** -----表格左侧树状目录加载组方法 end----- **/
+
+    /** -------- 条件查询  start ------------*/
+    //查询按钮
+    function querylist() {
+        var projectid = $('#projectid').val();
+        var companyid = $("#companyid").val();
+        var msg = $("#msg").val();
+
+        var termsn = $("#termsn").val();
+        var onlineStatus = $("#onlineStatus").val();
+        var isgroup = $("#isgroup").val();
+
+        var remark = $("#remark").val();
+        var termmodel = $("#termmodel").val();
+        var erpcode = $("#erpcode").val();
+
+        location.href = "/DMIL/param/list?companyid=" + companyid + "&projectid=" + projectid + "&msg=" + encodeURI(msg)
+            + "&termsn=" + encodeURI(termsn) + "&remark=" + encodeURI(remark) + "&isSet=" + isSet + "&erpcode=" + erpcode
+            + "&termmodel=" + termmodel + "&status=" + onlineStatus + "&isgroup=" + isgroup + "&page=1" + "&pageSize=" + $("#pageSize").val();
+    }
+    //开关查询
+    var isSet = [[${isSet}]];
+    function switchlist() {
+        if (isSet) {
+            isSet = false;
+        } else {
+            isSet = true;
+        }
+        querylist();
+    }
+    /** -------- 条件查询  start ------------*/
+
+
+    /** ------ 设备详情 start ------ **/
+    /*查看设备详情*/
+    var currentid = 0;
+
+    function devicedetail(id) {
+        currentid = id;
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/device/devicedetail"
+            , data: {id: id}
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //左列----------------------------------------
+                    $('#devicetype').val(data.obj2.termmodel);
+                    $("#snumber").val(data.obj2.termsn);
+                    $('#deviceid').val(data.obj2.deviceid);
+                    $('#macaddress').val(data.obj2.macaddress);
+                    $('#lanip').val(data.obj2.lanip);
+                    $('#imei').val(data.obj2.imei);
+                    $('#machinetype').val(data.obj2.machinetype);
+                    $('#barcode').val(data.obj2.barcode);
+                    $('#udid').val(data.obj2.udid);
+                    $('#uuid').val(data.obj2.uuid);
+                    $('#ctratetime').val(data.obj3.createtime);
+                    $('#moditytime').val(data.obj3.moditytime);
+                    if (data.obj2.status == "1") {
+                        $('#status').val("在线");
+                    } else {
+                        $('#status').val("离线");
+                    }
+
+                    //右列-------------------------------------------
+                    var softwarelist = "";
+                    for (var i = 0; i < data.softwarelist.length; i++) {
+                        softwarelist += data.softwarelist[i].remark +"("+ data.softwarelist[i].softwareversion +");\n"
+                    }
+                    $('#softwarelist').val(softwarelist);
+
+                    $('#company').val(data.obj2.companyid);
+                    $('#groups').val(data.obj2.projectid);
+                    $('#contact').val(data.obj2.contact);
+                    $('#telno').val(data.obj2.telno);
+                    $('#address').val(data.obj2.address);
+                    $('#deviceremark').val(data.obj2.remark);
+
+                    //右侧分组信息
+                    var companylist = "<option value='' style='color:lightgrey;'>请选择公司</option>";
+                    for (var i = 0; i < data.companys.length; i++) {
+                        if (data.obj2.companyid == data.companys[i].id) {
+                            companylist = companylist + "<option value='" + data.companys[i].id + "' selected>" + data.companys[i].name + "</option>";
+                        } else {
+                            companylist = companylist + "<option value='" + data.companys[i].id + "'>" + data.companys[i].name + "</option>";
+                        }
+                    }
+                    $('#company').html(companylist);
+
+                    var grouplist = "<option value='' style='color:lightgrey;'>请选择分组</option>";
+                    for (var i = 0; i < data.groups.length; i++) {
+                        if (data.obj2.projectid == data.groups[i].id) {
+                            grouplist = grouplist + "<option value='" + data.groups[i].id + "' selected>" + data.groups[i].name + "</option>";
+                        } else {
+                            grouplist = grouplist + "<option value='" + data.groups[i].id + "'>" + data.groups[i].name + "</option>";
+                        }
+                    }
+                    $('#groups').html(grouplist);
+
+                    //设置数据后展示
+                    $('#detailDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /*关闭详情*/
+    function closeinfo() {
+        $('#detailDialog').modal('hide');
+        currentid = 0;
+    }
+    /** ------ 设备详情 end ------ **/
+
+
+    /** ----- 设备参数操作 start ----- */
+    //格式化参数
+    function praseparam(id, param) {
+        var paramText = "";
+        if (param != null) {
+            paramText += "定时音量1（音量："+ param[0].value + "，时间："+ param[0].time +"）";
+            paramText += "<br/>"
+            paramText += "定时音量2（音量："+ param[1].value + "，时间："+ param[1].time +"）";
+        } else {
+            paramText += "定时音量1（音量：100，时间：07:00）";
+            paramText += "<br/>"
+            paramText += "定时音量2（音量：40，时间：23:00）";
+        }
+        $("#param_"+id).html(paramText);
+    }
+
+    //参数设置--单台
+    var singleid = 0;
+    function paramSet(id, erpcode) {
+        singleid = id;
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/param/paramdetail"
+            , data: {
+                id: singleid
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: true
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    //音量参数显示
+                    if (data.voiceOb != "" && data.voiceOb != null) {
+                        $("#param1").show();
+                        $("#param2").show();
+                        var voiceparam = data.voiceOb;
+                        $("#paramValue1").val(voiceparam[0].value);
+                        $("#paramTime1").val(voiceparam[0].time);
+                        $("#paramValue2").val(voiceparam[1].value);
+                        $("#paramTime2").val(voiceparam[1].time);
+                    } else {
+                        $("#param1").hide();
+                        $("#param2").hide();
+                    }
+                    //重启参数显示
+                    if (data.rebootOb != "" && data.rebootOb != null) {
+                        $("#param3").show();
+                        var rebootTime = data.rebootOb;
+                        $("#paramTime3").val(rebootTime);
+                    } else {
+                        $("#param3").hide();
+                    }
+
+                    $('#paramDialog').modal('show');
+                } else {
+                    alert(data.obj1);
+                }
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    //打开参数设置框--批量
+    function openparam() {
+        var devices = false;
+        if (idstr.length > 0) {
+            devices = true;
+        }
+        if (!devices) {
+            if (confirm("请勾选设备！")) {
+                return;
+            }
+        } else {
+            $("#param1").show();
+            $("#param2").show();
+            $("#param3").show();
+            $('#paramDialog').modal('show');
+        }
+    }
+
+    //关闭参数设置框
+    function closeparam() {
+        $('#paramDialog').modal('hide');
+        $("#paramValue1").val("");
+        $("#paramTime1").val("");
+        $("#paramValue2").val("");
+        $("#paramTime2").val("");
+        $("#paramTime3").val("");
+    }
+
+    //保存参数设并发布
+    function saveparam() {
+        //定时音量1100
+        var voiceValue = "";
+        var paramValue1 = $("#paramValue1").val();
+        var paramTime1 = $("#paramTime1").val();
+        var paramValue2 = $("#paramValue2").val();
+        var paramTime2 = $("#paramTime2").val();
+        if (!(paramValue1 == "" && paramTime1 == "" && paramValue2 == "" && paramTime2 == "")) {
+            if (paramValue1 == "" || paramTime1 == "" || paramValue2 == "" || paramTime2 == "") {
+                alert("请将音量参数设置完整！");
+                return;
+            }
+            if (paramValue1 != "" && paramValue2 != "") {
+                voiceValue += "[{";
+                voiceValue += "\"time\":\""+ paramTime1 +"\",";
+                voiceValue += "\"value\":"+ paramValue1;
+                voiceValue += "}";
+                voiceValue += ",";
+                voiceValue += "{";
+                voiceValue += "\"time\":\""+ paramTime2 +"\",";
+                voiceValue += "\"value\":"+ paramValue2;
+                voiceValue += "}]";
+            }
+        }
+
+        //定时重启
+        var rebootValue = $("#paramTime3").val();
+
+        //组织参数代码
+        var paramlist = "";
+            paramlist += "[";
+            paramlist +=    "{\"paramCode\":1100, \"paramValue\":" + voiceValue +"}";
+            paramlist +=    ",{\"paramCode\":1101, \"paramValue\":\"" + rebootValue +"\"}";
+            paramlist += "]";
+
+        //保存并发布
+        if (singleid == 0) {
+            idmap = getidmap();
+        } else {
+            idmap = singleid + ":" + singleid;
+        }
+        $.ajax({
+            type: "POST"
+            , url: "/DMIL/param/pubparam"
+            , data: {
+                paramlist: paramlist,
+                idstr: "{" + idmap + "}"
+            }
+            , contentType: "application/x-www-form-urlencoded;charset=utf-8;"
+            , dataType: "json"
+            , async: false
+            , cache: false
+            , success: function (data) {
+                if (data.obj1 == 'success') {
+                    console.log("设置成功！");
+                } else {
+                    alert(data.obj1);
+                }
+                location.reload();
+            }
+            , error: function (XMLHttpRequest, textStatus, errorThrown) {
+                //alert(XMLHttpRequest.status + textStatus);
+            }
+        });
+    }
+
+    /** ----- 设备参数操作 end ----- */
+</script>
+</body>
+</html>
